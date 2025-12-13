@@ -1,0 +1,12 @@
+{
+  "title": "Chatbot",
+  "website": "https://managemindgroup.nl",
+  "prompts": [
+    "",
+    "",
+    "",
+    ""
+  ],
+  "stream_api_url": "https://fa-stream-chatbot-lentiz-no-av.azurewebsites.net/api/streamopenai",
+  "show_avatar": false
+}

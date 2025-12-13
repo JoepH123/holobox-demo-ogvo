@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chatbot</title>
+  <link rel="stylesheet" href="static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    (function () {
+      // 1) Map *hostnames* (no protocol/port) to tenant names
+      const HOST_TO_TENANT = {
+        "localhost": "quickstep-ai-development",
+      }
+
+      const host = location.hostname.toLowerCase();
+      let tenant = HOST_TO_TENANT[host];
+
+      // Fallback: use first label as tenant if not explicitly mapped
+      if (!tenant) {
+        const sub = host.split(".")[0];
+        tenant = sub || "default";
+      }
+
+      // id to find/reuse the link later
+      const LINK_ID = "tenant-theme-css";
+
+      // APPLY CLIENT STYLING: once the CSS custom properties are available
+      function applyClientAssets() {
+        const root = getComputedStyle(document.documentElement);
+        const rawLogo = root.getPropertyValue("--header-logo-url").trim().replace(/^"|"$/g, "");
+        const rawFav  = root.getPropertyValue("--favicon-url").trim().replace(/^"|"$/g, "");
+
+        // unwrap url("...") -> from logo CSS variable
+        const stripUrl = v => v.replace(/^url\((['"]?)(.*?)\1\)$/, "$2");
+
+        const logoUrl = stripUrl(rawLogo);
+        const favUrl  = stripUrl(rawFav);
+
+        console.log("logo var:", rawLogo, "→", logoUrl);
+        const img = document.getElementById("clientLogo");
+        if (img && logoUrl) img.src = logoUrl;
+
+        if (favUrl) {
+          let fav = document.querySelector("link[rel='icon']") || document.createElement("link");
+          fav.rel = "icon";
+          fav.href = favUrl;
+          if (!fav.parentNode) document.head.appendChild(fav);
+        }
+      }
+
+      // Ensure we only attach the link once, and handle cache race
+      function ensureThemeLink() {
+        // Reuse existing link if present
+        let link = document.getElementById(LINK_ID);
+        if (link) {
+          // If the stylesheet is already loaded (e.g., cached), immediately apply
+          if (link.sheet || link.relList?.supports?.("preload") === false) {
+            applyClientAssets();
+          } else {
+            // Also apply on pageshow (bfcache restores) as a safety net
+            addOnce(link, "load", applyClientAssets);
+          }
+          return;
+        }
+
+        // Create a new link and attach the onload BEFORE setting href (avoids race)
+        link = document.createElement("link");
+        link.id = LINK_ID;
+        link.rel = "stylesheet";
+
+        addOnce(link, "load", applyClientAssets);
+        link.addEventListener("error", (e) => {
+          console.warn("Failed to load theme CSS:", e);
+        });
+
+        link.href = `/clients/${tenant}/theme.css`;
+        console.log("Loading theme from:", link.href);
+        document.head.appendChild(link);
+
+        // Fallback: if the UA puts the sheet in bfcache and skips load, apply soon
+        // after paint to catch cached styles.
+        requestAnimationFrame(() => setTimeout(applyClientAssets, 0));
+      }
+
+      // Helper to add an event listener just once without risking duplicates
+      function addOnce(target, type, handler) {
+        const wrapped = function (ev) {
+          target.removeEventListener(type, wrapped);
+          handler(ev);
+        };
+        target.addEventListener(type, wrapped);
+      }
+
+      // Apply on first run
+      ensureThemeLink();
+
+      // Also handle page restores from the back/forward cache (Safari/Firefox/Chrome)
+      window.addEventListener("pageshow", (e) => {
+        if (e.persisted) {
+          // Stylesheet is already there; just read variables again
+          applyClientAssets();
+        }
+      });
+      
+      // APPLY CLIENT TEXT: title and prompt buttons
+      async function applyClientText() {
+        const container = document.getElementById("promptButtons");
+        // If you renamed your buttons holder, update the selector above.
+        const candidates = [
+          `/clients/${tenant}/settings.json`,
+          `/clients/default/settings.json`
+        ];
+
+        for (const url of candidates) {
+          try {
+            const res = await fetch(url, { cache: "no-store" });
+            if (!res.ok) continue;
+            const data = await res.json();
+
+            // stream_api_url --> dit moet in Scripts.js voor elke client instance naar een andere function app verwijzen
+            // Op deze manier worden tokens voor elke client op de goede OpenAI API gerouteerd
+            if (data && typeof data.stream_api_url === "string" && data.stream_api_url.trim()) {
+              window.CUSTOM_API_OPENAI_URL = data.stream_api_url.trim();
+            }
+            if (data && data.show_avatar) {
+              window.showAvatar = data.show_avatar;
+            }
+            if (data && data.avatar_id) {
+              window.avatarID = data.avatar_id;
+            }
+
+            // show avatar
+            if (data && data.show_avatar === true) {
+              const card = document.getElementById("avatarCard");
+              if (card) card.hidden = false;
+
+              if (data && typeof data.avatar_url === "string" && data.avatar_url.trim()) {
+                const avatar = document.getElementById("avatarMedia");
+                if (avatar) avatar.src = data.avatar_url.trim();
+              }
+            }
+
+            // title
+            if (data && typeof data.title === "string" && data.title.trim()) {
+              document.title = data.title.trim();
+            }
+
+            // bronnen visibility
+            const bronnenCard = document.querySelector(".bronnen-card");
+            if (bronnenCard) {
+              if (data && data.hide_bronnen === true) {
+                bronnenCard.hidden = true;
+              } else {
+                bronnenCard.hidden = false;
+              }
+            }
+
+            // website
+            if (data && typeof data.website === "string" && data.website.trim()) {
+              const homeBtn = document.getElementById("homeBtn");
+              if (homeBtn) {
+                homeBtn.onclick = () => {
+                  window.top.location.href = data.website.trim();
+                };
+              }
+            }
+
+            // prompts
+            if (container && Array.isArray(data?.prompts) && data.prompts.length) {
+              // Clear any hardcoded buttons
+              container.innerHTML = "";
+
+              for (const text of data.prompts) {
+                if (typeof text !== "string" || !text.trim()) continue;
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = text;
+
+                // Prefill an input or call your existing send function
+                btn.addEventListener("click", () => {
+                  const input = document.getElementById("messageInput") || document.querySelector("textarea");
+                  if (input) {
+                    input.value = text;
+                    input.dispatchEvent(new Event("input", { bubbles: true })); // if frameworks listen to input
+                  }
+                  // If you have a sendMessage(text) function, you could call it here instead.
+                  // sendMessage(text);
+                });
+
+                container.appendChild(btn);
+              }
+            }
+            
+            return; // success, stop trying candidates
+          } catch (err) {
+            console.warn("Failed to load client text from", url, err);
+          }
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyClientText);
+      } else {
+        applyClientText();
+      }
+
+    })();
+  </script>
+</head>
+<body>
+<header>
+    <img id="clientLogo" alt="Logo" style="height:3.5rem; object-fit:contain;" />
+    <div class="header-actions">
+    <!-- Home button: Navigate back to website main page -->
+    <button class="header-btn" id="homeBtn" style="font-size: 1.2rem;">
+        Home
+    </button>
+        <div class="header-separator"></div>
+    <!-- Reset button: Reset the chat or reload the page -->
+    <button class="header-btn" id="resetBtn"><svg viewBox="0 0 24 24" fill="none"><path d="M12.978 21.4558L13.6213 21.8413L12.978 21.4558ZM13.4659 20.6417L12.8226 20.2562L13.4659 20.6417ZM10.5341 20.6417L9.89077 21.0272H9.89077L10.5341 20.6417ZM11.022 21.4558L11.6653 21.0703L11.022 21.4558ZM12 4.22224L11.473 3.68863C11.3303 3.82954 11.25 4.02172 11.25 4.22224C11.25 4.42277 11.3303 4.61494 11.473 4.75585L12 4.22224ZM20.25 11.7778C20.25 12.192 20.5858 12.5278 21 12.5278C21.4142 12.5278 21.75 12.192 21.75 11.7778H20.25ZM3.34254 16.5897L4.03418 16.2997H4.03418L3.34254 16.5897ZM8.21062 19.3258L8.19786 20.0757L8.21062 19.3258ZM5.77792 18.9951L5.49394 19.6892H5.49394L5.77792 18.9951ZM20.6575 16.5897L21.3491 16.8798L21.3491 16.8798L20.6575 16.5897ZM15.7893 19.3258L15.7766 18.5759H15.7766L15.7893 19.3258ZM18.2221 18.9951L18.5061 19.6892H18.5061L18.2221 18.9951ZM18.8512 4.87708L18.4629 5.51871L18.8512 4.87708ZM20.3369 6.34439L20.9742 5.94897V5.94897L20.3369 6.34439ZM5.14876 4.87708L4.76041 4.23545H4.76041L5.14876 4.87708ZM3.66312 6.34439L3.02582 5.94897H3.02582L3.66312 6.34439ZM9.66251 19.5199L10.0361 18.8696L10.0361 18.8696L9.66251 19.5199ZM14.777 2.53361C15.0717 2.24254 15.0747 1.76768 14.7836 1.47297C14.4925 1.17827 14.0177 1.17532 13.723 1.46639L14.777 2.53361ZM13.723 6.97809C14.0177 7.26916 14.4925 7.26622 14.7836 6.97151C15.0747 6.67681 15.0717 6.20194 14.777 5.91087L13.723 6.97809ZM9.3023 4.97309C9.71651 4.97182 10.0513 4.63501 10.05 4.2208C10.0487 3.80658 9.71191 3.47183 9.2977 3.4731L9.3023 4.97309ZM21.7365 14.4646C21.7476 14.0506 21.4209 13.7059 21.0068 13.6948C20.5928 13.6837 20.2481 14.0104 20.237 14.4245L21.7365 14.4646ZM13.6213 21.8413L14.1092 21.0272L12.8226 20.2562L12.3347 21.0703L13.6213 21.8413ZM9.89077 21.0272L10.3787 21.8413L11.6653 21.0703L11.1774 20.2562L9.89077 21.0272ZM12.3347 21.0703C12.2671 21.183 12.1458 21.25 12 21.25C11.8541 21.25 11.7329 21.183 11.6653 21.0703L10.3787 21.8413C11.1047 23.0529 12.8952 23.0529 13.6213 21.8413L12.3347 21.0703ZM3.75 12.6667V11.7778H2.25V12.6667H3.75ZM2.25 12.6667C2.25 13.6917 2.24958 14.4985 2.2946 15.1502C2.3401 15.8087 2.43455 16.3639 2.6509 16.8798L4.03418 16.2997C3.908 15.9988 3.83117 15.6279 3.79103 15.0468C3.75042 14.4588 3.75 13.7125 3.75 12.6667H2.25ZM8.22338 18.5759C7.09333 18.5567 6.51282 18.4854 6.06191 18.3009L5.49394 19.6892C6.23158 19.991 7.06826 20.0565 8.19786 20.0757L8.22338 18.5759ZM2.6509 16.8798C3.18531 18.1541 4.20905 19.1636 5.49394 19.6892L6.06191 18.3009C5.14155 17.9244 4.41322 17.2035 4.03418 16.2997L2.6509 16.8798ZM15.8021 20.0757C16.9317 20.0565 17.7684 19.991 18.5061 19.6892L17.9381 18.3009C17.4872 18.4854 16.9067 18.5567 15.7766 18.5759L15.8021 20.0757ZM19.9658 16.2997C19.5868 17.2035 18.8585 17.9244 17.9381 18.3009L18.5061 19.6892C19.791 19.1636 20.8147 18.1541 21.3491 16.8798L19.9658 16.2997ZM12 4.97224C13.4807 4.97224 14.8952 4.97257 16.074 5.05235C16.6621 5.09215 17.1733 5.1507 17.5922 5.23404C18.0215 5.31946 18.3018 5.42118 18.4629 5.51871L19.2396 4.23545C18.8597 4.00551 18.3813 3.86165 17.8849 3.76288C17.378 3.66204 16.7964 3.59781 16.1753 3.55577C14.9354 3.47186 13.4654 3.47224 12 3.47224V4.97224ZM21.75 11.7778C21.75 10.3376 21.7508 9.20415 21.6637 8.29884C21.5754 7.38197 21.3915 6.62164 20.9742 5.94897L19.6996 6.7398C19.9453 7.1359 20.093 7.63739 20.1706 8.44258C20.2492 9.25933 20.25 10.3082 20.25 11.7778H21.75ZM18.4629 5.51871C18.9677 5.82427 19.3913 6.24293 19.6996 6.7398L20.9742 5.94897C20.5404 5.24979 19.9457 4.66284 19.2396 4.23545L18.4629 5.51871ZM3.75 11.7778C3.75 10.3082 3.75081 9.25933 3.82944 8.44258C3.90695 7.63739 4.05466 7.1359 4.30042 6.7398L3.02582 5.94897C2.60846 6.62164 2.42461 7.38197 2.33634 8.29884C2.24919 9.20415 2.25 10.3376 2.25 11.7778H3.75ZM4.76041 4.23545C4.05426 4.66284 3.45964 5.24979 3.02582 5.94897L4.30042 6.7398C4.6087 6.24293 5.03225 5.82427 5.5371 5.51871L4.76041 4.23545ZM11.1774 20.2562C10.9955 19.9526 10.8327 19.6795 10.6738 19.4641C10.5054 19.2359 10.3094 19.0265 10.0361 18.8696L9.28893 20.1702C9.3196 20.1879 9.37008 20.2236 9.46688 20.3548C9.57318 20.4988 9.69425 20.6993 9.89077 21.0272L11.1774 20.2562ZM8.19786 20.0757C8.59427 20.0824 8.841 20.0874 9.02805 20.1078C9.20155 20.1268 9.26024 20.1538 9.28893 20.1702L10.0361 18.8696C9.76085 18.7115 9.47626 18.6479 9.19112 18.6167C8.91953 18.587 8.59228 18.5822 8.22338 18.5759L8.19786 20.0757ZM14.1092 21.0272C14.3057 20.6993 14.4268 20.4988 14.5331 20.3548C14.6299 20.2236 14.6804 20.1879 14.711 20.1702L13.9639 18.8696C13.6906 19.0265 13.4945 19.2359 13.3261 19.4641C13.1672 19.6795 13.0045 19.9526 12.8226 20.2562L14.1092 21.0272ZM15.7766 18.5759C15.4077 18.5822 15.0804 18.587 14.8088 18.6167C14.5237 18.6479 14.2391 18.7115 13.9639 18.8696L14.711 20.1702C14.7397 20.1538 14.7984 20.1268 14.9719 20.1078C15.159 20.0874 15.4057 20.0824 15.8021 20.0757L15.7766 18.5759ZM12.527 4.75585L14.777 2.53361L13.723 1.46639L11.473 3.68863L12.527 4.75585ZM11.473 4.75585L13.723 6.97809L14.777 5.91087L12.527 3.68863L11.473 4.75585ZM9.2977 3.4731C7.0617 3.47995 5.93013 3.52749 4.76041 4.23545L5.5371 5.51871C6.29497 5.06002 6.99727 4.98015 9.3023 4.97309L9.2977 3.4731ZM20.237 14.4245C20.2114 15.3805 20.1349 15.8964 19.9658 16.2997L21.3491 16.8798C21.6333 16.2021 21.7102 15.4457 21.7365 14.4646L20.237 14.4245Z" fill="currentColor"></path> </g></svg> Nieuwe chat</button>
+    </div>
+</header>
+
+<div class="layout">
+    <!-- Left N%: source citations -->
+    <aside class="sidebar">
+      <!-- Avatar card (toggleable per client) -->
+      <section class="avatar-card" id="avatarCard" aria-label="Assistent avatar" hidden>
+        <div class="avatar-frame">
+          <img
+            src="static/bronnen-avatar-placeholder.jpg"
+            alt="Assistent avatar"
+            class="avatar-media"
+            id="avatarMedia"
+          />
+          <video
+            id="avatarVideo"
+            autoplay
+            playsinline
+            muted
+            style="width:100%; border-radius:12px; display:none;"
+          ></video>
+
+          <!-- Combined Start/Stop + Interrupt Buttons -->
+          <div class="avatar-controls">
+            <button id="btnStartStop" class="avatarBtn" data-state="start" aria-label="Start" title="Verbinden ">
+              <svg fill="currentColor" viewBox="0 0 24 24" id="signal-2" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line">
+                <g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="SVGRepo_iconCarrier">
+                  <line id="primary-upstroke" x1="11.95" y1="12" x2="12.05" y2="12" style="fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5;"></line>
+                  <path id="primary" d="M5.64,18.36a9,9,0,0,1,0-12.72" style="fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path>
+                  <path id="primary-2" data-name="primary" d="M8.46,8.46a5,5,0,0,0,0,7.08" style="fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path>
+                  <path id="primary-3" data-name="primary" d="M18.36,18.36a9,9,0,0,0,0-12.72" style="fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path>
+                  <path id="primary-4" data-name="primary" d="M15.54,15.54a5,5,0,0,0,0-7.08" style="fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path>
+                </g>
+              </svg>
+            </button>
+
+            <button id="btnInterrupt" class="avatarBtn" type="button" aria-label="Onderbreek spreken" title="Onderbreek spreken" disabled>
+              <svg width=10px height=10px viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                <rect x="0" y="0" width=10px height=10px rx="2" ry="2"/>
+              </svg>
+            </button>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- Bronnen card: title + sources -->
+      <section class="bronnen-card" aria-labelledby="bronnenTitle">
+        <h2 class="bronnen-title" id="bronnenTitle">Bronnen</h2>
+        <div class="sources">
+          <!-- .citation items are dynamically added here -->
+        </div>
+      </section>
+    </aside>
+
+
+    <!-- Resizer: draggable divider between sidebar and chat -->
+    <div class="resizer" role="separator" aria-label="Versleep om de Bronnen-kolom te wijzigen" tabindex="0"></div>
+
+    <!-- Right (100-N)%: your existing chat -->
+    <main class="chat-wrapper">
+        <!-- Chat messages will be dynamically added here -->
+        <div id="messages"></div>
+
+        <!-- Input area: defines broader input area -->
+        <div class="input-area">
+          <div id="attachments" class="attachments"></div>
+
+          <!-- Unified composer capsule: intuitive input area -->
+          <div class="composer">
+
+            <!-- Attach button within composer area (kept same id for JS) -->
+            <button id="attachBtn" type="button" title="Bestand toevoegen" class="icon-btn ghost">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21.44 11.05l-8.49 8.49a5 5 0 01-7.07-7.07l8.49-8.49a3.5 3.5 0 015 5l-8.49 8.49a2 2 0 01-2.83-2.83l7.78-7.78" />
+              </svg>
+            </button>
+
+            <!-- Textual input area within the composer area -->
+            <textarea id="userInput" rows="1" placeholder="Je vraag of bericht ..."></textarea>
+
+            <!-- Dictate button (microphone) -->
+            <button id="micBtn" title="Inspreken (klik om te starten/stoppen)" aria-pressed="false">
+              <!-- mic icon -->
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 14a3 3 0 003-3V7a3 3 0 10-6 0v4a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 0014 0h-2zM11 19v3h2v-3h-2z"/>
+              </svg>
+            </button>
+
+            <!-- Send button within composer area (kept same id for JS) -->
+            <button id="sendBtn" title="Versturen">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Hidden file input -->
+          <input type="file" id="fileInput" style="display:none" multiple
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+
+          <!-- Your prompt buttons: Contain sample questions for chatbot -->
+          <div id="promptButtons" class="prompt-buttons">
+          </div>
+        </div>
+    </main>
+</div>
+
+<!-- SVG icons used in the interface -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+    <symbol id="icon-download" viewBox="0 0 24 24">
+        <path d="M5.625 15C5.625 14.5858 5.28921 14.25 4.875 14.25C4.46079 14.25 4.125 14.5858 4.125 15H5.625ZM4.875 16H4.125H4.875ZM19.275 15C19.275 14.5858 18.9392 14.25 18.525 14.25C18.1108 14.25 17.775 14.5858 17.775 15H19.275ZM11.1086 15.5387C10.8539 15.8653 10.9121 16.3366 11.2387 16.5914C11.5653 16.8461 12.0366 16.7879 12.2914 16.4613L11.1086 15.5387ZM16.1914 11.4613C16.4461 11.1347 16.3879 10.6634 16.0613 10.4086C15.7347 10.1539 15.2634 10.2121 15.0086 10.5387L16.1914 11.4613ZM11.1086 16.4613C11.3634 16.7879 11.8347 16.8461 12.1613 16.5914C12.4879 16.3366 12.5461 15.8653 12.2914 15.5387L11.1086 16.4613ZM8.39138 10.5387C8.13662 10.2121 7.66533 10.1539 7.33873 10.4086C7.01212 10.6634 6.95387 11.1347 7.20862 11.4613L8.39138 10.5387ZM10.95 16C10.95 16.4142 11.2858 16.75 11.7 16.75C12.1142 16.75 12.45 16.4142 12.45 16H10.95ZM12.45 5C12.45 4.58579 12.1142 4.25 11.7 4.25C11.2858 4.25 10.95 4.58579 10.95 5H12.45ZM4.125 15V16H5.625V15H4.125ZM4.125 16C4.125 18.0531 5.75257 19.75 7.8 19.75V18.25C6.61657 18.25 5.625 17.2607 5.625 16H4.125ZM7.8 19.75H15.6V18.25H7.8V19.75ZM15.6 19.75C17.6474 19.75 19.275 18.0531 19.275 16H17.775C17.775 17.2607 16.7834 18.25 15.6 18.25V19.75ZM19.275 16V15H17.775V16H19.275ZM12.2914 16.4613L16.1914 11.4613L15.0086 10.5387L11.1086 15.5387L12.2914 16.4613ZM12.2914 15.5387L8.39138 10.5387L7.20862 11.4613L11.1086 16.4613L12.2914 15.5387ZM12.45 16V5H10.95V16H12.45Z"
+              fill="currentColor"/>
+    </symbol>
+</svg>
+
+<!-- Convert textual content of docx to pdf such that it can be used as file upload  -->
+<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+<script src="https://unpkg.com/html2pdf.js/dist/html2pdf.bundle.min.js"></script>
+
+<!-- Add the scripts from the seperate JS file -->
+<script type="module" src="/static/script.js"></script>
+
+<!-- Temporary prop citations for testing -->
+<!-- <script>
+  // Add some mock citations so the sidebar shows demo sources
+  document.addEventListener("DOMContentLoaded", () => {
+    if (typeof addCitation === "function") {
+      addCitation([
+        "Rapport_Klimaatverandering_2023.pdf",
+        "Onderzoeksartikel_AI_in_onderwijs.docx",
+        "Jaarverslag_2022.pdf",
+        "Website_RIVM.txt"
+      ]);
+    }
+  });
+</script> -->
+
+</body>
+</html>

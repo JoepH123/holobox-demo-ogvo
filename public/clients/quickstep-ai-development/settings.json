@@ -1,0 +1,14 @@
+{
+  "title": "Quickstep AI Chatbot",
+  "website": "https://quickstep-ai.nl",
+  "prompts": [
+    "Kun je de algemene voorwaarden uitleggen in eenvoudige taal?",
+    "Kun je het privacy statement samenvatten?",
+    "Waarom is Quickstep AI de beste keuze voor mijn bedrijf?",
+    "Wat zijn de voordelen van het gebruik van AI in mijn bedrijfsprocessen?"
+  ],
+  "stream_api_url": "https://fa-stream-chatbot-lentiz-no-av.azurewebsites.net/api/streamopenai",
+  "show_avatar": true,
+  "avatar_url": "/clients/quickstep-ai-development/fallback_avatar_image.png",
+  "avatar_id": "3110b2f1dc3246a39a76a08354d005bf"
+}

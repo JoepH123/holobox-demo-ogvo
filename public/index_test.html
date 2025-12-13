@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avatar Chatbot</title>
+  <link rel="stylesheet" href="static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <script>
+    (function () {
+      // 1) Hostname Mapping (Kept exactly as requested)
+      const HOST_TO_TENANT = {
+        "localhost": "ogvo",
+        "127.0.0.1": "quickstep-ai-development",
+        "polite-mushroom-08067d003.1.azurestaticapps.net": "quickstep-ai-development",
+        "black-desert-04f806e03.3.azurestaticapps.net": "quickstep-ai",
+        "chatbot.quickstep-ai.nl": "quickstep-ai",
+        "salmon-field-0d61c1003.3.azurestaticapps.net": "managemind",
+        "ella.managemindgroup.nl": "managemind",
+        "wonderful-coast-01a8ed003.1.azurestaticapps.net": "lentiz",
+        "chatbot-lentiz.managemindgroup.nl": "lentiz",
+        "proud-field-0704b6003.2.azurestaticapps.net": "ogvo", 
+        "thankful-desert-0eaf11b03.1.azurestaticapps.net": "mieczorg",
+        "chatbot.miec-zorg.nl": "mieczorg",
+        "icy-sand-09ff12803.2.azurestaticapps.net": "miecdata",
+        "chatbot.miecdata.nl": "miecdata",
+      };
+
+      const host = location.hostname.toLowerCase();
+      let tenant = HOST_TO_TENANT[host];
+
+      if (!tenant) {
+        const sub = host.split(".")[0];
+        tenant = sub || "default";
+      }
+
+      // APPLY CLIENT TEXT: Only load API URLs and Avatar settings
+      async function applyClientSettings() {
+        const candidates = [
+          `/clients/${tenant}/settings.json`,
+          `/clients/default/settings.json`
+        ];
+
+        for (const url of candidates) {
+          try {
+            const res = await fetch(url, { cache: "no-store" });
+            if (!res.ok) continue;
+            const data = await res.json();
+
+            // OpenAI API URL
+            if (data && typeof data.stream_api_url === "string" && data.stream_api_url.trim()) {
+              window.CUSTOM_API_OPENAI_URL = data.stream_api_url.trim();
+            }
+            
+            // Avatar Settings
+            if (data) {
+                if (data.show_avatar) window.showAvatar = data.show_avatar;
+                if (data.avatar_id) window.avatarID = data.avatar_id;
+                
+                // Set Avatar Image if provided
+                if (typeof data.avatar_url === "string" && data.avatar_url.trim()) {
+                    const avatar = document.getElementById("avatarMedia");
+                    if (avatar) avatar.src = data.avatar_url.trim();
+                }
+            }
+
+            // Page Title
+            if (data && typeof data.title === "string" && data.title.trim()) {
+              document.title = data.title.trim();
+            }
+            
+            return; 
+          } catch (err) {
+            console.warn("Failed to load client text from", url, err);
+          }
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyClientSettings);
+      } else {
+        applyClientSettings();
+      }
+    })();
+  </script>
+</head>
+<body>
+
+    <main class="avatar-container">
+        
+        <div class="avatar-frame" id="avatarCard">
+            <img src="static/bronnen-avatar-placeholder.jpg" alt="Avatar" id="avatarMedia" />
+            <video id="avatarVideo" autoplay playsinline muted></video>
+
+            <div class="avatar-controls">
+                <button id="btnStartStop" class="avatarBtn" data-state="start" aria-label="Start" title="Verbinden">
+                   <svg class="icon-start" fill="currentColor" viewBox="0 0 24 24"><path d="M5.64,18.36a9,9,0,0,1,0-12.72M18.36,18.36a9,9,0,0,0,0-12.72M11.95,12h.1M8.46,8.46a5,5,0,0,0,0,7.08M15.54,15.54a5,5,0,0,0,0-7.08" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </button>
+
+                <button id="btnInterrupt" class="avatarBtn" type="button" aria-label="Onderbreek" title="Onderbreek" disabled>
+                   <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect width="10" height="10" rx="2"/></svg>
+                </button>
+            </div>
+
+            <button id="micBtn" class="mic-btn" title="Inspreken">
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                    <path d="M12 14a3 3 0 003-3V7a3 3 0 10-6 0v4a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 0014 0h-2zM11 19v3h2v-3h-2z"/>
+                </svg>
+            </button>
+        </div>
+    </main>
+
+    <div id="debug-ui" style="position:fixed; bottom:0; left:0; width:100%; opacity:0; pointer-events:none; height:0; overflow:hidden;">
+        <div id="messages"></div> <textarea id="userInput"></textarea>
+        <button id="sendBtn">Send</button>
+    </div>
+
+    <script type="module" src="/static/script.js"></script>
+
+</body>
+</html>

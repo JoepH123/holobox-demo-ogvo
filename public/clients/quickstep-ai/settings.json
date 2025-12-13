@@ -1,0 +1,12 @@
+{
+  "title": "Quickstep AI Chatbot",
+  "website": "https://quickstep-ai.nl",
+  "prompts": [
+    "Kun je de algemene voorwaarden uitleggen in eenvoudige taal?",
+    "Wat kan een AI-chatbot voor mijn bedrijf betekenen?",
+    "Waarom is Quickstep AI de beste keuze voor mijn bedrijf?",
+    "Wat zijn de voordelen van het gebruik van AI in mijn bedrijfsprocessen?"
+  ],
+  "stream_api_url": "https://fa-stream-chatbot-quickstep-no-av.azurewebsites.net/api/streamopenai",
+  "show_avatar": false
+}

@@ -1,0 +1,7 @@
+{
+  "routes": [
+    { "route": "/api/*", "allowedRoles": [ "anonymous" ] }
+  ],
+  "navigationFallback": { "rewrite": "/index.html" },
+  "mimeTypes": { ".wasm": "application/wasm" }
+}

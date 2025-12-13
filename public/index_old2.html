@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Voice Chat</title>
+  <link rel="stylesheet" href="static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <script>
+    (function () {
+      // Basic tenant logic preserved in case API calls depend on it
+      const host = location.hostname.toLowerCase();
+      // ... (Rest of tenant mapping can remain if your script.js needs "window.CUSTOM_API_OPENAI_URL")
+    })();
+  </script>
+</head>
+<body>
+
+<main class="portrait-container">
+    <img src="https://placehold.co/1080x1920" alt="Portrait" class="background-image" />
+
+    <div class="mic-wrapper">
+        <button id="micBtn" title="Inspreken" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 14a3 3 0 003-3V7a3 3 0 10-6 0v4a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 0014 0h-2zM11 19v3h2v-3h-2z"/>
+            </svg>
+        </button>
+    </div>
+</main>
+
+<div class="functional-hidden">
+    <div id="messages"></div>
+    <textarea id="userInput"></textarea>
+    <button id="sendBtn"></button>
+    <div id="attachments"></div>
+    <input type="file" id="fileInput" />
+    <div id="promptButtons"></div>
+</div>
+
+<script type="module" src="/static/script.js"></script>
+
+</body>
+</html>

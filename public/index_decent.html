@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chatbot</title>
+  <link rel="stylesheet" href="static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <style>
+    /* 1. GLOBAL RESET & LAYOUT */
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; /* Prevent scrolling */
+        background-color: #000; /* Black background for letterboxing */
+        font-family: sans-serif;
+    }
+
+    /* Hide unnecessary elements */
+    header, .resizer, .bronnen-card, #messages, #promptButtons, #attachBtn { 
+        display: none !important; 
+    }
+
+    .layout {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* 2. AVATAR CONTAINER */
+    .sidebar {
+        width: 100% !important;
+        height: 100% !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+        margin: 0; padding: 0;
+        background: transparent;
+        pointer-events: none; /* Allow clicks to pass if needed */
+    }
+
+    /* The Card acts as the flex container for the image/video */
+    #avatarCard {
+        width: 100%;
+        height: 100%;
+        margin: 0; padding: 0;
+        border: none;
+        background: black;
+        display: block; /* JS toggles this, but we ensure it fills space */
+    }
+
+    .avatar-frame {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center; /* Center horizontally */
+        align-items: center;     /* Center vertically */
+        position: relative;
+        pointer-events: auto;
+    }
+
+    /* 3. AVATAR MEDIA SCALING 
+       Height = 100% of page. Width = Auto (maintains aspect ratio).
+    */
+    #avatarMedia, #avatarVideo {
+        height: 100vh; /* Force height to match viewport height */
+        width: auto;   /* Width adjusts automatically */
+        max-width: none;
+        object-fit: contain; /* Ensures the whole image is visible within the height */
+        display: block;
+    }
+
+    /* 4. AVATAR CONTROLS (Top Left) */
+    .avatar-controls {
+        position: fixed; /* Fixed relative to viewport */
+        top: 20px;
+        left: 20px;
+        z-index: 50;
+        display: flex;
+        gap: 10px;
+    }
+
+    .avatarBtn {
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.2);
+        backdrop-filter: blur(4px);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+    .avatarBtn:hover {
+        background: rgba(50, 50, 50, 0.8);
+    }
+    .avatarBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* 5. INPUT CONSOLE (Bottom Center Overlay) */
+    .chat-wrapper {
+        position: absolute;
+        bottom: 40px;
+        left: 0;
+        width: 100%;
+        z-index: 20;
+        display: flex;
+        justify-content: center;
+        pointer-events: none; /* Let clicks pass through outside the input */
+    }
+
+    .input-area {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        pointer-events: auto; /* Re-enable clicks for the input box */
+    }
+
+    /* The Bubble containing text area + buttons */
+    .composer {
+        background: rgba(20, 20, 20, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50px;
+        width: 90%;
+        max-width: 600px; /* Keep it neat */
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    #userInput {
+        background: transparent;
+        border: none;
+        color: white;
+        flex-grow: 1;
+        resize: none;
+        font-size: 1rem;
+        outline: none;
+        max-height: 100px;
+        padding: 5px;
+    }
+    #userInput::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Icons inside composer */
+    #micBtn, #sendBtn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+    #micBtn:hover, #sendBtn:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    #micBtn svg, #sendBtn svg {
+        width: 24px;
+        height: 24px;
+        fill: white; /* Force white icons */
+        stroke: white;
+    }
+    
+    /* Hide scrollbars just in case */
+    ::-webkit-scrollbar { width: 0px; background: transparent; }
+  </style>
+
+  <script>
+    (function () {
+      const HOST_TO_TENANT = {
+        "localhost": "quickstep-ai-development",
+        "127.0.0.1": "quickstep-ai-development",
+        "proud-field-0704b6003.2.azurestaticapps.net": "test", 
+      };
+
+      const host = location.hostname.toLowerCase();
+      let tenant = HOST_TO_TENANT[host];
+
+      if (!tenant) {
+        const sub = host.split(".")[0];
+        tenant = sub || "default";
+      }
+
+      async function applyClientSettings() {
+        const candidates = [
+          `/clients/${tenant}/settings.json`,
+          `/clients/default/settings.json`
+        ];
+
+        for (const url of candidates) {
+          try {
+            const res = await fetch(url, { cache: "no-store" });
+            if (!res.ok) continue;
+            const data = await res.json();
+
+            if (data && typeof data.stream_api_url === "string" && data.stream_api_url.trim()) {
+              window.CUSTOM_API_OPENAI_URL = data.stream_api_url.trim();
+            }
+            
+            if (data) {
+                if (data.show_avatar) window.showAvatar = data.show_avatar;
+                if (data.avatar_id) window.avatarID = data.avatar_id;
+                
+                if (typeof data.avatar_url === "string" && data.avatar_url.trim()) {
+                    const avatar = document.getElementById("avatarMedia");
+                    if (avatar) avatar.src = data.avatar_url.trim();
+                }
+            }
+
+            if (data && typeof data.title === "string" && data.title.trim()) {
+              document.title = data.title.trim();
+            }
+            return; 
+          } catch (err) {
+            console.warn("Failed to load client text from", url, err);
+          }
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyClientSettings);
+      } else {
+        applyClientSettings();
+      }
+    })();
+  </script>
+</head>
+<body>
+
+<header>
+    <img id="clientLogo" alt="Logo" />
+    <div class="header-actions">
+        <button class="header-btn" id="homeBtn">Home</button>
+        <button class="header-btn" id="resetBtn">Nieuwe chat</button>
+    </div>
+</header>
+
+<div class="layout">
+    <aside class="sidebar">
+      <section class="avatar-card" id="avatarCard" aria-label="Assistent avatar" hidden>
+        <div class="avatar-frame">
+          <img
+            src="static/bronnen-avatar-placeholder.jpg"
+            alt="Assistent avatar"
+            class="avatar-media"
+            id="avatarMedia"
+          />
+          <video
+            id="avatarVideo"
+            autoplay
+            playsinline
+            muted
+            style="display:none;"
+          ></video>
+
+          <div class="avatar-controls">
+            <button id="btnStartStop" class="avatarBtn" data-state="start" aria-label="Start" title="Verbinden">
+              <svg fill="currentColor" viewBox="0 0 24 24" id="signal-2" width="24" height="24">
+                  <path d="M12 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                  <path d="M5.64 18.36a9 9 0 0 1 0-12.72" stroke="currentColor" stroke-width="2" fill="none"></path>
+                  <path d="M18.36 18.36a9 9 0 0 0 0-12.72" stroke="currentColor" stroke-width="2" fill="none"></path>
+              </svg>
+            </button>
+
+            <button id="btnInterrupt" class="avatarBtn" type="button" aria-label="Onderbreek spreken" title="Onderbreek" disabled>
+              <svg width="12" height="12" viewBox="0 0 10 10" fill="currentColor">
+                <rect x="0" y="0" width="10" height="10" rx="2" ry="2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="bronnen-card" aria-labelledby="bronnenTitle">
+        <h2 class="bronnen-title" id="bronnenTitle">Bronnen</h2>
+        <div class="sources"></div>
+      </section>
+    </aside>
+
+    <div class="resizer" role="separator" tabindex="0"></div>
+
+    <main class="chat-wrapper">
+        <div id="messages"></div>
+
+        <div class="input-area">
+          <div id="attachments" class="attachments"></div>
+
+          <div class="composer">
+            <button id="attachBtn" type="button"></button>
+
+            <textarea id="userInput" rows="1" placeholder="Je bericht ..."></textarea>
+
+            <button id="micBtn" title="Inspreken">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 14a3 3 0 003-3V7a3 3 0 10-6 0v4a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 0014 0h-2zM11 19v3h2v-3h-2z"/>
+              </svg>
+            </button>
+
+            <button id="sendBtn" title="Versturen">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+
+          <input type="file" id="fileInput" style="display:none" multiple />
+          <div id="promptButtons" class="prompt-buttons"></div>
+        </div>
+    </main>
+</div>
+
+<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+<script src="https://unpkg.com/html2pdf.js/dist/html2pdf.bundle.min.js"></script>
+<script type="module" src="/static/script.js"></script>
+
+</body>
+</html>

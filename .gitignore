@@ -1,0 +1,8 @@
+.env
+/api/local.settings.json
+/local.settings.json
+/local.settings2.json
+/public/clients/eerstmediation/
+/helper_files/kill_heygen.py
+node_modules/
+api/node_modules/

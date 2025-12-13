@@ -1,0 +1,14 @@
+{
+  "title": "OGVO Chatbot",
+  "website": "https://www.ogvo.nl/",
+  "prompts": [
+    "Voorbeelprompt 1",
+    "Voorbeelprompt 2",
+    "Voorbeelprompt 3",
+    "Voorbeelprompt 4"
+  ],
+  "stream_api_url": "https://fa-stream-chatbot-ovgo-av.azurewebsites.net/api/streamopenai",
+  "show_avatar": true,
+  "avatar_url": "/clients/ogvo/fallback_avatar_image.png",
+  // "avatar_id": "3110b2f1dc3246a39a76a08354d005bf"
+}

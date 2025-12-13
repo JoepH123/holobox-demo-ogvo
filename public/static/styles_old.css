@@ -1,0 +1,1046 @@
+/* -----------------------------
+   1) CSS Variables (Theme)
+   ----------------------------- */
+:root {
+
+  /* CLIENT SPECIFIC STYLING */
+  /* Below are the DEFAULT values: if no tenant recognized in domain */
+  
+  /* General colors */
+  --primary-text-color: #333333;
+  --primary-client-color: #737373; /* PRIORITY */
+  --secondary-client-color: #cdcdcd; /* PRIORITY */
+  --primary-bg-color: #f7f7f8;
+  --secondary-bg-color: #ffffff;
+  --border-color: #e0e0e0;
+  --svg-icon-grey: #696969;
+
+  /* General colors: RGB Version */
+  --primary-text-color-rgb: 51, 51, 51;
+  --primary-client-color-rgb: 115, 115, 115; /* PRIORITY */
+  --secondary-client-color-rgb: 205, 205, 205; /* PRIORITY */
+  --primary-bg-color-rgb: 247, 247, 248;
+  --secondary-bg-color-rgb: 255, 255, 255;
+  --border-color-rgb: 224, 224, 224;
+  --svg-icon-grey-rgb: 105, 105, 105;
+
+  /* Background colors */
+  --header-bg-color: var(--secondary-bg-color);
+  --chat-panel-bg-color: var(--primary-bg-color); 
+  --sidebar-panel-bg-color: var(--primary-bg-color);
+  --citations-title-bg-color: var(--secondary-client-color);
+  --citations-list-bg-color: var(--secondary-bg-color);
+  --citation-chip-bg-color: var(--secondary-bg-color);
+  --user-message-bg-color: var(--secondary-client-color);
+  --assistant-message-bg-color: var(--secondary-bg-color);
+  --example-prompt-button-bg-color: var(--secondary-client-color); 
+  --area-around-composer-bg-color: var(--secondary-bg-color);  /* visible area, var(--secondary-bg-color); invisible area, var(--primary-bg-color) */
+  --area-around-composer-top-border-color: var(--border-color);  /* visible border: var(--border-color); invisible border: var(--primary-bg-color) */
+  --prompt-input-bg-color: var(--secondary-bg-color);
+  --user-message-attachment-bg-color: var(--secondary-bg-color); 
+
+  /* Text colors */ 
+  --header-buttons-text-color: var(--svg-icon-grey);
+  --citations-title-text-color: var(--primary-text-color);
+  --citations-text-color: var(--primary-text-color);
+  --welcome-text-color: var(--primary-text-color);
+  --assistant-message-text-color: var(--primary-text-color);
+  --user-message-text-color: var(--primary-text-color); 
+  --example-prompt-button-text-color: var(--primary-text-color);
+  --placeholder-prompt-text-color: #9aa0a6;
+  --user-prompt-text-color: var(--primary-text-color);
+  --user-message-attachment-text-color: var(--primary-text-color);
+  --user-message-attachment-type-text-color: #666;
+  --prompt-attachment-file-name-text-color: var(--primary-text-color);
+  --prompt-attachment-file-size-text-color: #666;
+  
+  /* Component colors */
+  --citations-icon-color: var(--svg-icon-grey);
+  --resizer-color-rgb: var(--primary-client-color-rgb);
+  --message-copy-icon-color: var(--svg-icon-grey);  
+  --attachment-divider-icon-color: var(--svg-icon-grey);
+  --attachment-divider-line-color: rgba(var(--svg-icon-grey-rgb), .30);
+  --prompt-attachment-remove-cross-color: #666;
+  --avatar-connect-button-color: 40, 167, 69;
+  --avatar-disconnect-button-color: 220, 53, 69;   
+
+  /* Hover colors */ 
+  --chip-hover-bg-color: rgba(var(--primary-client-color-rgb), .10);
+  --mic-hover-bg-color: rgba(var(--primary-client-color-rgb), .10);
+  --attach-hover-bg-color: rgba(var(--primary-client-color-rgb), .10);
+  --user-message-attachment-hover-bg-color: color-mix(in srgb, rgb(var(--primary-client-color-rgb)) 10%, var(--user-message-attachment-bg-color));
+  --prompt-attachment-remove-cross-hover-color: #333;
+
+  /* Sizes and format */
+  --sidebar-pct: 20%;  /* initial width of the sidebar */
+
+  /* Content */
+  --header-logo-url: url("/static/default_logo.png"); /* PRIORITY */
+  --chat-logo-url: var(--header-logo-url);
+  --welcome-text: "Welkom!\A\AKies één van de voorbeeldvragen hieronder of stel je eigen vraag om te beginnen."; /* PRIORITY */
+  /* Could add favicon here as well */
+}
+
+/* -----------------------------
+   2) Base / Reset
+   ----------------------------- */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: var(--primary-text-color);
+  background: var(--primary-bg-color);
+  display: flex;
+  flex-direction: column;
+}
+
+/* -----------------------------
+   3) App Header
+   ----------------------------- */
+header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: var(--header-bg-color);
+  font-size: 1.2rem; 
+  font-weight: 700; 
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-separator {
+  width: 1.5px;
+  height: 2.25rem;
+  background-color: var(--header-buttons-text-color);
+}
+
+/* Reset / Refresh button in header */
+.header-btn {
+  position: static;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--header);
+  color: var(--header-buttons-text-color);
+  font-size: 1rem;
+  cursor: pointer; 
+}
+.header-btn svg { width: 2rem; height: 2rem; color: var(--header-buttons-text-color); }
+.header-btn:hover { filter: brightness(0.90); background: var(--secondary-bg-color); } 
+.header-btn:focus-visible { 
+  outline: 2px solid var(--primary-client-color);
+  outline-offset: 2px;
+} 
+
+
+/* -----------------------------
+   4) Layout Columns (Sidebar + Chat)
+   ----------------------------- */
+.layout {
+  flex: 1;               /* fill vertical space below the header */
+  display: flex;         /* side-by-side columns */
+  overflow: hidden;      /* prevent double scrollbars */
+}
+
+/* Sidebar wrapper (title + scrollable list) */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 var(--sidebar-pct);
+  min-width: 240px;          /* keeps sidebar usable on narrow screens */
+  background: var(--sidebar-panel-bg-color); 
+  border-right: 1px solid var(--border-color);
+  padding: 1rem;      /* space from header/edges */
+  gap: 0.75rem;       /* consistent space between cards */
+}
+
+/* --- Avatar card (separate from bronnen) --- */
+.avatar-card {
+  background: linear-gradient(180deg, #ffffff, #fafafa);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  overflow: hidden; /* keep rounded corners on media */
+  flex: 0 0 auto;
+  position: relative; /* ensure absolute positioning is relative to card */
+  overflow: hidden;   /* prevent overflow when dragging near edges */
+}
+
+/* Responsive media frame (img/video/canvas) */
+.avatar-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9; /* change to 1/1, 4/3, etc. if you prefer */
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(var(--primary-client-color-rgb), .10), transparent),
+    radial-gradient(120% 120% at 100% 0%, rgba(0,0,0,.04), transparent),
+    #fff;
+}
+
+.avatar-media {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover; /* ‘contain’ if you want letterboxing instead */
+  aspect-ratio: 16 / 9;
+  filter: brightness(70%);
+}
+
+/* --- New unified control buttons --- */
+.avatar-controls {
+  position: absolute;
+  bottom: .5rem;
+  left: .5rem;
+  background: white;
+  border-radius: 1rem; /* match avatar card rounding */
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.35em 0.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .4s ease, transform .4s ease;
+}
+
+/* Hidden state while streaming (JS toggles this class) */
+.avatar-controls.auto-hidden {
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+}
+
+/* When NOT live/streaming, controls should be visible regardless */
+.avatar-card:not(.live) .avatar-controls {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+}
+
+/* Base (already in your file, included here for completeness) */
+.avatarBtn {
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  color: white;
+  border-radius: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  background-color: rgb(var(--avatar-connect-button-color)); /* 🟢 start */
+  line-height: 0;             /* remove inline baseline wiggle */
+  padding: 0;                 /* make the circle tight */
+}
+
+#btnInterrupt {
+  background-color: #dcdcdc;    
+  color: rgb(39, 39, 39);  
+  position: relative;   
+  opacity:.85;    
+}
+
+/* Size & block layout for the SVG */
+#btnInterrupt svg rect {
+  display: block;             /* no baseline gap */
+}
+
+/* Greyed-out look when disabled */
+#btnInterrupt:disabled {
+  background-color: #dcdcdc;       /* light grey background */
+  color: rgb(39, 39, 39);                     /* dim text/icon color */
+  cursor: default;             /* disabled cursor */
+  transform: none;                 /* no hover grow */
+  box-shadow: none;                /* remove any pulse/shadow */
+  opacity: 0.4;                    /* subtle fade */
+}
+
+/* Loading pulse + spinner for Interrupt (mirrors Start/Stop loading) */ 
+#btnInterrupt.loading {
+  pointer-events: none;
+  animation: btn-pulse 0.9s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(0,0,0,0.12);
+}
+#btnInterrupt.loading::after { 
+  content: "";
+  position: absolute;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 2px solid rgba(39, 39, 39, .85);
+  border-top-color: transparent;
+  animation: btn-spin 0.75s linear infinite;
+}
+
+#btnStartStop svg {
+  width: 24px;       /* adjust size */
+  height: 24px;
+  /* Color is changed using the "color" argument in the AvatarButton*/
+}
+
+#btnStartStop:hover, #btnInterrupt:not(:disabled):hover { transform: scale(1.05); filter: opacity(0.80); } 
+
+#btnStartStop[data-state="stop"] {
+  background-color: rgb(var(--avatar-disconnect-button-color)); /* 🔴 stop */
+}
+
+/* Loading pulse (applies while async start/stop is running) */
+#btnStartStop.loading {
+  pointer-events: none;            /* ignore extra clicks during async work */
+  animation: btn-pulse 0.9s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(0,0,0,0.12);
+}
+
+/* Larger spinner outside the button area */
+#btnStartStop.loading::after { 
+  content: "";
+  position: absolute;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  border: 2px solid rgba(var(--avatar-connect-button-color), 0.5); /* 🟢 green */
+  border-top-color: transparent;
+  animation: btn-spin 0.75s linear infinite;
+}
+
+/* When data-state="stop", make the spinner red */
+#btnStartStop[data-state="stop"].loading::after {
+  border: 2px solid rgba(var(--avatar-disconnect-button-color), 0.5); /* 🔴 red */
+}
+
+/* Make sure the button can host the ::after spinner */
+#btnStartStop { position: relative; }
+
+@keyframes btn-pulse {
+  0%   { transform: scale(1.00); box-shadow: 0 0 0 0 rgba(0,0,0,0.12); }
+  50%  { transform: scale(1.06); box-shadow: 0 0.15rem 0.6rem 0 rgba(0,0,0,0.18); }
+  100% { transform: scale(1.00); box-shadow: 0 0 0 0 rgba(0,0,0,0.12); }
+}
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Bronnen card (title + sources inside) */
+.bronnen-card {
+  /* margin: 0 1rem 1rem; */
+  background: var(--citations-list-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.875rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.bronnen-card[hidden] {
+  display: none !important;
+}
+/* Title bar */
+.bronnen-title {
+  margin: 0;
+  padding: .65rem 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--citations-title-text-color);
+  text-align: center;
+  letter-spacing: .01em;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--citations-title-bg-color);
+}
+
+/* Sources list inside card */
+.bronnen-card .sources {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1rem 1rem;
+}
+
+/* Vertical drag handle between sidebar and chat: allows changing width of "bronnen" column */
+.resizer {
+  width: 6px;
+  flex: 0 0 6px;
+  cursor: col-resize;
+  background:
+    linear-gradient(to right, transparent 0, transparent 2px, rgba(var(--resizer-color-rgb),.25) 2px, rgba(var(--resizer-color-rgb),.25) 4px, transparent 4px);
+} 
+.resizer:hover,
+.resizer:focus-visible {
+  background:
+    linear-gradient(to right, transparent 0, transparent 2px, rgba(var(--resizer-color-rgb),.5) 2px, rgba(var(--resizer-color-rgb),.5) 4px, transparent 4px);
+  outline: none;
+}
+
+/* While dragging, prevent text selection */
+.layout.is-resizing {
+  user-select: none;
+}
+
+/* Scrollable source list */
+.sources {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* Individual citation tiles */
+.sources .citation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3rem;
+  margin: 0.5rem auto;
+  padding: 0.5rem 0.75rem;
+  background: var(--citation-chip-bg-color);
+  color: var(--citations-text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  text-align: center;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+  position: relative;
+  padding-right: 2.25rem; /* space for the icon */
+}
+.sources .citation:hover { background: var(--chip-hover-bg-color); }
+
+/* Right-aligned SVG icon inside the bubble */
+.sources .citation svg.citation-icon {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--citations-icon-color);          /* uses currentColor in the SVG below */
+  opacity: 0.7;
+  pointer-events: none;    /* clicks go to the bubble */
+}
+.sources .citation:hover svg.citation-icon {
+  opacity: 1;
+  color: var(--primary-client-color);
+}
+
+/* Loading state for a citation tile */
+.sources .citation.loading {
+  opacity: 0.7;             /* dim it a bit */
+  pointer-events: none;     /* prevent double clicks */
+}
+
+/* Spinner replaces the download icon when loading */
+.sources .citation.loading::after {
+  content: "";
+  position: absolute;
+  color: var(--primary-client-color);
+  right: 0.6rem;
+  top: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: -0.625rem;    /* center vertically */
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: spin 0.7s linear infinite;
+}
+
+.sources .citation.loading svg.citation-icon {
+  display: none;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+/* -----------------------------
+   5) Chat Column
+   ----------------------------- */
+main.chat-wrapper {
+  position: relative;
+  flex: 1;                /* take remaining width */
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0 0 0;
+  overflow: hidden;
+  background: var(--chat-panel-bg-color) var(--chat-logo-url) no-repeat center center;
+  background-size: 300px auto;
+}
+
+/* Messages scroll area */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Message bubble (base) */
+.message {
+  position: relative;
+  width: fit-content;
+  max-width: 70%;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  background: var(--assistant-message-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+}
+
+/* User message (right-aligned, distinct bg) */
+.message.user {
+  margin-left: auto;
+  margin-right: 5%;
+  background: var(--user-message-bg-color);
+  color: var(--user-message-text-color);
+}
+
+/* Assistant message (full-width card) */
+.message.assistant,
+.message.assistant.loading {
+  width: 90%;
+  max-width: 90%;
+  margin: 0.5rem auto;     /* center horizontally */
+  text-align: left;
+  background: var(--assistant-message-bg-color);
+  color: var(--assistant-message-text-color)
+}
+
+/* Inline loading spinner for assistant bubble */
+.message.assistant.loading::after {
+  content: "";
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-top-color: var(--primary-client-color);
+  border-right-color: var(--primary-client-color);
+  border-bottom-color: var(--primary-client-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+#messages:empty::before {
+  content: var(--welcome-text);
+  display: block;
+  text-align: center;
+  color: var(--welcome-text-color);
+  font-size: 1.15rem;
+  margin-top: 2rem;
+  padding: 0 1rem;
+  white-space: pre-wrap;
+}
+
+.message-attachments {
+  margin: 0 0 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Attachment card - In user message bubbles */
+.attachment-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  background: var(--user-message-attachment-bg-color); 
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  text-decoration: none;
+  color: var(--user-message-attachment-text-color);
+  transition: all 0.2s ease;
+  min-width: 180px;
+}
+.attachment-card:hover {
+  background: var(--user-message-attachment-hover-bg-color);
+  transform: translateY(-1px);
+}
+
+.attachment-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 0.5rem;
+  background: var(--primary-client-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.attachment-icon svg { width: 20px; height: 20px; fill: var(--user-message-attachment-bg-color); }
+
+.attachment-details {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.attachment-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.attachment-type { font-size: 0.8rem; color: var(--user-message-attachment-type-text-color); }
+
+/* When a message contains attachments */
+.message.has-attachments { padding-top: 0.75rem; }
+
+/* Wrapping the original text so it sits cleanly below the divider */
+.message-body { margin-top: 0.35rem; }
+
+/* Labeled divider between attachments and text */
+.attachment-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.75rem;
+  color: var(--attachment-divider-icon-color);
+  font-size: 0.85rem;
+  user-select: none;
+}
+.attachment-divider::before,
+.attachment-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: var(--attachment-divider-line-color);
+}
+/* Optional small paperclip icon inside the divider label */
+.attachment-divider .label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--attachment-divider-icon-color); 
+}
+.attachment-divider .label svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.8;
+}
+
+/* Copy-to-clipboard icon button on messages */
+.copy-btn {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.25rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  color: var(--assistant-message-bg-color);
+}
+.copy-btn svg path { width: 1.5rem; height: 1.5rem; fill: var(--assistant-message-bg-color); stroke: var(--message-copy-icon-color); }
+.copy-btn:hover svg path { stroke: var(--primary-client-color); }
+.copy-btn:focus-visible {
+  outline: 2px solid var(--primary-client-color);
+  outline-offset: 2px;
+}
+
+/* -----------------------------
+   6) Composer / Input Area
+   ----------------------------- */
+.input-area {
+  position: sticky;       /* sticks to bottom of chat column */
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: .5rem;
+  padding: 0.75rem;
+  background: var(--area-around-composer-bg-color); 
+  border-top: 1px solid var(--area-around-composer-top-border-color);
+  z-index: 10;
+  align-items: flex-end; 
+  flex-wrap: wrap;
+}
+
+.input-area textarea {
+  padding: 0.75rem;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: none;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  min-height: 2.75rem;
+  flex: 1 1 auto;
+}
+
+/* Paperclip (attach) button */
+.icon-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--prompt-input-bg-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.icon-btn:hover {
+  filter: brightness(0.90);
+  transform: translateY(-1px);
+  background-color: var(--attach-hover-bg-color);
+}
+.icon-btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block;
+  stroke: var(--primary-client-color);
+}
+
+/* --- Composer capsule --- */
+.composer {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  background: var(--prompt-input-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 1.25rem;        /* rounded pill */
+  padding: .35rem .4rem .35rem .4rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  margin: 0;
+}
+.input-area .composer { flex: 1 1 auto; }
+
+/* Make the textarea seamless inside the capsule */
+.composer textarea {
+  flex: 1 1 auto;
+  min-height: 2.4rem;
+  max-height: calc(25vh);
+  padding: .6rem .25rem;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--user-prompt-text-color);
+  font-size: 1rem;
+  line-height: 1.4;
+  overflow-y: auto;
+}
+.composer textarea::placeholder { color: var(--placeholder-prompt-text-color); }
+
+/* --- Dictate (mic) button --- */
+#micBtn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--prompt-input-bg-color);
+  /* color: #333; */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#micBtn:hover {
+  filter: brightness(0.90);
+  transform: translateY(-1px);
+  background-color: var(--mic-hover-bg-color);
+}
+
+#micBtn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block;
+  fill: var(--primary-client-color);
+}
+
+/* Recording (active dictation) state */
+#micBtn.recording {
+  background-color: var(--primary-client-color);      /* bright red when recording */
+  color: var(--prompt-input-bg-color);
+  animation: pulse 1.2s ease-in-out infinite;
+  transform: scale(0.8);
+}
+
+/* Change the mic icon to white when recording */
+#micBtn.recording svg {
+  fill: var(--prompt-input-bg-color);
+}
+
+/* Subtle pulsing animation to indicate active listening */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-client-color-rgb), 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(var(--primary-client-color-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-client-color-rgb), 0);
+  }
+}
+
+/* Left/Right inline icon buttons inside the capsule */
+.composer .icon-btn,
+#sendBtn {
+  width: 2.35rem;
+  height: 2.35rem;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center;
+  border: none; 
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+/* Send button (round) — final visual (wins over earlier generic sizing) */
+#sendBtn {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  background: var(--primary-client-color);
+  color: var(--prompt-input-bg-color);
+  border-radius: 50%;
+}
+#sendBtn svg { width: 1.75rem; height: 1.75rem; }
+#sendBtn:hover { filter: brightness(0.90); transform: translateY(-1px); }
+#sendBtn:focus-visible {
+  outline: 2px solid rgba(0,0,0,0.35);
+  outline-offset: 2px;
+}
+
+/* Busy state — hides icon and shows square */
+#sendBtn.busy svg { display: none; }
+#sendBtn.busy {
+  background: var(--prompt-input-bg-color);
+  cursor: default;
+}
+#sendBtn.busy::before {
+  content: "";
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  background-color: var(--primary-client-color);
+  border-radius: 0; /* square instead of circle */
+}
+
+/* Focus ring on composer when textarea is focused */
+.composer:has(textarea:focus-visible) {
+  box-shadow: 0 0 0 2px rgba(var(--primary-client-color-rgb), .50);
+}
+
+/* Attachments strip (sits above the composer row) */
+.attachments {
+  order: -1;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: .25rem 0 0;
+  margin: 0;
+  flex: 0 0 100%;
+}
+.attachments:empty { display: none; }
+
+/* File chip - User Input Console */
+.attach-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  max-width: 260px;
+  padding: .5rem .75rem .6rem .5rem;
+  background: var(--secondary-bg-color);
+  color: var(--prompt-attachment-file-name-text-color);
+  border: 1px solid var(--border-color);
+  border-radius: .5rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  transition: background .25s ease, border-color .25s ease; 
+}
+
+/* Left icon circle */
+.attach-icon {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-client-color);
+}
+.attach-icon svg { width:16px; height:16px; display:block; fill: var(--secondary-bg-color); }
+
+/* Filename + size */
+.attach-meta { min-width:0; display:flex; flex-direction:column; line-height:1.1; }
+.attach-name {
+  font-size: .9rem;
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis;
+  max-width:170px;
+}
+.attach-size { font-size:.75rem; color: var(--prompt-attachment-file-size-text-color); }
+
+/* Remove (X) */
+.attach-remove {
+  margin-left: auto;
+  border: none; 
+  background: none; 
+  cursor: pointer;
+  color: var(--prompt-attachment-remove-cross-color);  
+  padding: .25rem; 
+  line-height: 0;
+}
+.attach-remove:hover { color: var(--prompt-attachment-remove-cross-hover-color); }
+
+/* Progress bar */
+.attach-progress {
+  position:absolute; left:0; right:0; 
+  bottom:-1px; height:3px; 
+  background:#eee; 
+  border-bottom-left-radius:.5rem; border-bottom-right-radius:.5rem;
+  overflow:hidden;
+}
+.attach-progress > span {
+  display:block; height:100%; width:0%;
+  background: var(--primary-client-color);
+  transition: width .2s ease;
+}
+
+/* Completed state */
+.attach-chip.done {
+  background: rgba(var(--primary-client-color-rgb), .10);
+  border-color: rgba(var(--primary-client-color-rgb), .90);
+}
+.attach-chip.done .attach-progress { display:none; }
+
+/* -----------------------------
+   7) Prompt Buttons Overlay
+   ----------------------------- */
+.prompt-buttons {
+  position: absolute;
+  bottom: calc(100% + 1rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  width: 95%;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  z-index: 20;
+}
+.prompt-buttons button {
+  width: 100%;
+  height: 3em;
+  padding: 0.75rem;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: inherit;
+  background: var(--example-prompt-button-bg-color);
+  border: 1px solid var(--border-color);
+  color: var(--example-prompt-button-text-color);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: height 0.2s ease, white-space 0.2s ease, filter 0.2s ease;
+}
+.prompt-buttons button:hover {
+  height: auto;
+  white-space: normal;
+  overflow: visible;
+  filter: brightness(0.90);
+}
+.prompt-buttons button:focus-visible {
+  outline: 2px solid var(--primary-client-color);
+  outline-offset: 2px;
+}
+
+/* -----------------------------
+   8) Animations & Reduced Motion
+   ----------------------------- */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* -----------------------------
+   9) Small-Screen Tweaks
+   ----------------------------- */
+@media (max-width: 900px) {
+  .sidebar { flex-basis: 28%; }
+  .message { max-width: 85%; }
+}
+
+@media (max-width: 640px) {
+  
+  /* --- 1. Variable Overrides (The Swap) --- */
+  header img {
+    content: var(--chat-logo-url) !important;
+    width: auto;  /* Resets width to maintain aspect ratio of new image */
+    height: 2.5rem; /* Adjust this height to fit your mobile header */
+    object-fit: contain;
+  }
+
+  /* --- 2. Hide Elements --- */
+  
+  /* Hide prompt buttons */
+  .prompt-buttons {
+    display: none !important;
+  }
+
+  /* Hide welcome text */
+  #messages:empty::before {
+    display: none !important;
+  }
+
+  /* --- 3. Layout Adjustments --- */
+  .layout { flex-direction: column; }
+  .sidebar { flex: 0 0 auto; min-width: 100%; }
+  .sources .citation { width: 100%; }
+  .message { max-width: 95%; }
+}

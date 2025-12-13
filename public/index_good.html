@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chatbot</title>
+  <link rel="stylesheet" href="static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    /* 1. GLOBAL RESET */
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #000;
+        font-family: sans-serif;
+    }
+
+    /* -----------------------------------------------------------
+       2. HIDDEN LAYER
+       Container for elements functionality requires, but we don't want to see.
+       Using visibility: hidden instead of display: none ensures they 
+       still technically "take up space" in the DOM tree if the JS checks dimensions,
+       but absolute positioning throws them off screen.
+    ----------------------------------------------------------- */
+    #hidden-layer {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        visibility: hidden; 
+    }
+
+    /* -----------------------------------------------------------
+       3. VISUAL LAYER
+       This is the main stage.
+    ----------------------------------------------------------- */
+    #visual-layer {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        /* Flex centers the avatar */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* --- AVATAR --- */
+    .avatar-fullscreen-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1; /* Lowest layer */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #avatarMedia, #avatarVideo {
+        height: 100vh;
+        width: auto;
+        object-fit: contain;
+        display: block;
+    }
+
+    /* --- CONTROLS (Top Left) --- */
+    .avatar-controls {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 100; /* High Z-Index to ensure clickable */
+        display: flex;
+        gap: 12px;
+    }
+
+    .avatarBtn {
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.25);
+        backdrop-filter: blur(8px);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .avatarBtn:hover { background: rgba(50, 50, 50, 0.9); }
+    .avatarBtn:disabled { opacity: 0.5; cursor: default; }
+
+    /* --- INPUT CONSOLE (Bottom Center) --- */
+    /* We use the ORIGINAL class name '.input-area' but override its style locally */
+    .input-overlay-wrapper {
+        position: absolute;
+        bottom: 40px;
+        left: 0;
+        width: 100%;
+        z-index: 200; /* Very High Z-Index */
+        display: flex;
+        justify-content: center;
+        pointer-events: none; /* Allow clicks to pass through around the box */
+    }
+
+    /* This mimics the original structure expected by JS */
+    .composer {
+        pointer-events: auto; /* Re-enable clicks specifically for the box */
+        background: rgba(20, 20, 20, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 40px;
+        width: 90%;
+        max-width: 650px;
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    }
+
+    #userInput {
+        background: transparent;
+        border: none;
+        color: #fff;
+        flex-grow: 1;
+        font-size: 1.05rem;
+        outline: none;
+        resize: none;
+        max-height: 120px;
+        padding: 8px 5px;
+        font-family: inherit;
+    }
+    #userInput::placeholder { color: rgba(255,255,255,0.5); }
+
+    /* Button styles */
+    .icon-btn, #micBtn, #sendBtn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: white;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #micBtn:hover, #sendBtn:hover { background: rgba(255,255,255,0.1); }
+    svg { fill: currentColor; stroke: currentColor; }
+
+    /* Recording (active dictation) state */
+    #micBtn.recording {
+    background-color: white;      /* bright red when recording */
+    color: black;
+    animation: pulse 1.2s ease-in-out infinite;
+    transform: scale(0.8);
+    }
+
+    /* Change the mic icon to white when recording */
+    #micBtn.recording svg {
+    fill: black;
+    }
+
+    /* Subtle pulsing animation to indicate active listening */
+    @keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+    }
+
+  </style>
+
+  <script>
+    (function () {
+      const HOST_TO_TENANT = {
+        "localhost": "quickstep-ai-development",
+        "127.0.0.1": "quickstep-ai-development",
+        "proud-field-0704b6003.2.azurestaticapps.net": "test", 
+      };
+      const host = location.hostname.toLowerCase();
+      let tenant = HOST_TO_TENANT[host];
+      if (!tenant) {
+        const sub = host.split(".")[0];
+        tenant = sub || "default";
+      }
+      async function applyClientSettings() {
+        const candidates = [`/clients/${tenant}/settings.json`, `/clients/default/settings.json`];
+        for (const url of candidates) {
+          try {
+            const res = await fetch(url, { cache: "no-store" });
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (data && typeof data.stream_api_url === "string" && data.stream_api_url.trim()) window.CUSTOM_API_OPENAI_URL = data.stream_api_url.trim();
+            if (data) {
+                if (data.show_avatar) window.showAvatar = data.show_avatar;
+                if (data.avatar_id) window.avatarID = data.avatar_id;
+                if (typeof data.avatar_url === "string" && data.avatar_url.trim()) {
+                    const avatar = document.getElementById("avatarMedia");
+                    if (avatar) avatar.src = data.avatar_url.trim();
+                }
+            }
+            if (data && typeof data.title === "string" && data.title.trim()) document.title = data.title.trim();
+            return; 
+          } catch (err) { console.warn("Failed to load client text from", url, err); }
+        }
+      }
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", applyClientSettings);
+      else applyClientSettings();
+    })();
+  </script>
+</head>
+<body>
+
+  <div id="visual-layer">
+
+    <div class="avatar-fullscreen-container">
+        <img src="static/bronnen-avatar-placeholder.jpg" alt="Avatar" id="avatarMedia" />
+        <video id="avatarVideo" autoplay playsinline muted style="display:none;"></video>
+    </div>
+
+    <div class="avatar-controls">
+        <button id="btnStartStop" class="avatarBtn" data-state="start" title="Verbinden">
+            <svg fill="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path d="M12 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                <path d="M5.64 18.36a9 9 0 0 1 0-12.72" stroke="currentColor" stroke-width="2" fill="none"></path>
+                <path d="M18.36 18.36a9 9 0 0 0 0-12.72" stroke="currentColor" stroke-width="2" fill="none"></path>
+            </svg>
+        </button>
+
+        <button id="btnInterrupt" class="avatarBtn" type="button" title="Onderbreek spreken" disabled>
+            <svg width="12" height="12" viewBox="0 0 10 10" fill="currentColor">
+                <rect x="0" y="0" width="10" height="10" rx="2" ry="2"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="input-overlay-wrapper">
+        <div class="composer">
+            
+            <textarea id="userInput" rows="1" placeholder="Je vraag of bericht ..."></textarea>
+
+            <button id="micBtn" title="Inspreken">
+                <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+                    <path d="M12 14a3 3 0 003-3V7a3 3 0 10-6 0v4a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 0014 0h-2zM11 19v3h2v-3h-2z"/>
+                </svg>
+            </button>
+
+            <button id="sendBtn" title="Versturen">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
+                    <path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+  </div> 
+
+
+  <div id="hidden-layer">
+      <img id="clientLogo" alt="Logo" />
+      <button id="homeBtn">Home</button>
+      <button id="resetBtn">Reset</button>
+
+      <div id="avatarCard"></div> 
+      <div class="bronnen-card" id="bronnenTitle">
+         <div class="sources"></div>
+      </div>
+      <div class="resizer"></div>
+
+      <div id="messages"></div>
+
+      <div id="attachments"></div>
+      <button id="attachBtn"></button> <div id="promptButtons"></div>
+      
+      <input type="file" id="fileInput" multiple accept=".pdf,.docx,application/pdf" />
+
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <symbol id="icon-download" viewBox="0 0 24 24">
+            <path d="M5.625 15C5.625 14.5858 5.28921 14.25 4.875 14.25C4.46079 14.25 4.125 14.5858 4.125 15H5.625ZM4.875 16H4.125H4.875ZM19.275 15C19.275 14.5858 18.9392 14.25 18.525 14.25C18.1108 14.25 17.775 14.5858 17.775 15H19.275ZM11.1086 15.5387C10.8539 15.8653 10.9121 16.3366 11.2387 16.5914C11.5653 16.8461 12.0366 16.7879 12.2914 16.4613L11.1086 15.5387ZM16.1914 11.4613C16.4461 11.1347 16.3879 10.6634 16.0613 10.4086C15.7347 10.1539 15.2634 10.2121 15.0086 10.5387L16.1914 11.4613ZM11.1086 16.4613C11.3634 16.7879 11.8347 16.8461 12.1613 16.5914C12.4879 16.3366 12.5461 15.8653 12.2914 15.5387L11.1086 16.4613ZM8.39138 10.5387C8.13662 10.2121 7.66533 10.1539 7.33873 10.4086C7.01212 10.6634 6.95387 11.1347 7.20862 11.4613L8.39138 10.5387ZM10.95 16C10.95 16.4142 11.2858 16.75 11.7 16.75C12.1142 16.75 12.45 16.4142 12.45 16H10.95ZM12.45 5C12.45 4.58579 12.1142 4.25 11.7 4.25C11.2858 4.25 10.95 4.58579 10.95 5H12.45ZM4.125 15V16H5.625V15H4.125ZM4.125 16C4.125 18.0531 5.75257 19.75 7.8 19.75V18.25C6.61657 18.25 5.625 17.2607 5.625 16H4.125ZM7.8 19.75H15.6V18.25H7.8V19.75ZM15.6 19.75C17.6474 19.75 19.275 18.0531 19.275 16H17.775C17.775 17.2607 16.7834 18.25 15.6 18.25V19.75ZM19.275 16V15H17.775V16H19.275ZM12.2914 16.4613L16.1914 11.4613L15.0086 10.5387L11.1086 15.5387L12.2914 16.4613ZM12.2914 15.5387L8.39138 10.5387L7.20862 11.4613L11.1086 16.4613L12.2914 15.5387ZM12.45 16V5H10.95V16H12.45Z" fill="currentColor"/>
+        </symbol>
+      </svg>
+  </div>
+
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+  <script src="https://unpkg.com/html2pdf.js/dist/html2pdf.bundle.min.js"></script>
+  <script type="module" src="/static/script.js"></script>
+
+</body>
+</html>

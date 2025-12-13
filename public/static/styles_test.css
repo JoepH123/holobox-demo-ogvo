@@ -1,0 +1,161 @@
+/* -----------------------------
+   1) CSS Variables
+   ----------------------------- */
+:root {
+  --primary-color: #333;
+  --bg-color: #ffffff;
+  --avatar-connect-green: 40, 167, 69;
+  --avatar-disconnect-red: 220, 53, 69;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: var(--bg-color);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Prevent scrolling */
+  display: flex;
+  justify-content: center;
+}
+
+/* -----------------------------
+   2) Avatar Container
+   ----------------------------- */
+.avatar-container {
+    width: 100%;
+    height: 100%;
+    padding: 0; /* REMOVED PADDING */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.avatar-frame {
+    position: relative;
+    
+    /* Full Height Logic */
+    height: 100%;       /* Touches top and bottom */
+    width: auto;        /* Width adjusts to maintain ratio */
+    aspect-ratio: 9 / 16; 
+    
+    /* Visuals */
+    background: #f0f0f0;
+    border-radius: 0;   /* REMOVED ROUNDED EDGES */
+    box-shadow: 0 0 20px rgba(0,0,0,0.1); /* Optional: shadow on sides */
+    overflow: hidden;
+}
+
+/* Ensure the image/video covers the full strip */
+#avatarMedia, #avatarVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; 
+    display: block;
+}
+#avatarVideo { display: none; }
+
+/* -----------------------------
+   3) Avatar Controls (Top Left)
+   ----------------------------- */
+.avatar-controls {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 8px;
+    border-radius: 50px; /* Keep buttons rounded */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 10;
+    
+    /* Transition Logic */
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.avatar-controls.auto-hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+.avatarBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: transform 0.2s;
+}
+.avatarBtn:hover:not(:disabled) { transform: scale(1.1); }
+.avatarBtn svg { width: 20px; height: 20px; }
+
+#btnStartStop { background: rgb(var(--avatar-connect-green)); }
+#btnStartStop[data-state="stop"] { background: rgb(var(--avatar-disconnect-red)); }
+
+#btnInterrupt { background: #ccc; color: #333; }
+#btnInterrupt:disabled { opacity: 0.5; cursor: default; }
+
+/* Loading Spinners */
+.avatarBtn.loading { pointer-events: none; opacity: 0.8; }
+.avatarBtn.loading::after {
+    content: "";
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.5);
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* -----------------------------
+   4) Microphone (Bottom Center)
+   ----------------------------- */
+.mic-btn {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    cursor: pointer;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.2s ease;
+}
+
+.mic-btn:hover {
+    transform: translateX(-50%) scale(1.05);
+    background: #f9f9f9;
+}
+
+.mic-btn.recording {
+    background: #ff4444;
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+}
