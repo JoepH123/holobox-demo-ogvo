@@ -196,9 +196,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /** Update avatar card status (live indicator). This should be called when the connection to liveAvatar is made */
 function updateAvatarStatus(live) {
+  // 1. Existing logic for the Avatar Card
   const avatarCard = document.getElementById("avatarCard");
-  if (!avatarCard) return;
-  avatarCard.classList.toggle("live", live);
+  if (avatarCard) {
+    avatarCard.classList.toggle("live", live);
+  }
+
+  // 2. NEW LOGIC: Select the overlay
+  const overlay = document.querySelector(".overlay-unconnected");
+  
+  if (overlay) {
+    // If live is TRUE, we ADD "is-hidden" (Overlay disappears)
+    // If live is FALSE, we REMOVE "is-hidden" (Overlay appears)
+    overlay.classList.toggle("is-hidden", live);
+  }
 }
 
 /** Scroll the container so that the given message is at the top, with bottom padding. */
@@ -1248,7 +1259,7 @@ const micBtn = document.getElementById('micBtn');
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 // Configurable variable, that determines how long (ms) of silence to wait before auto-stopping.
-const AUTO_STOP_SILENCE_MS = 3500;  // 1000 = 1s, 0 = disabled --> 3500 gives good balance
+const AUTO_STOP_SILENCE_MS = 1800;  // 1000 = 1s, 0 = disabled --> 1800 gives good balance for conversation
 
 /** Update dictation status - necessary for UI styling */
 function updateDictationStatus(recording) {
@@ -1346,6 +1357,7 @@ function stopDictation() {
   updateDictationStatus(false); // revert dictation button to normal styling
   clearTimeout(silenceTimer);
   setMicVisual(false);
+  sendMessage()
   try { recognition && recognition.stop(); } catch {}
   recognition = null;
 }
