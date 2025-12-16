@@ -9,14 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
-    :root {
-        --user-message-bg-color: #cdcdcd;
-        --assistant-message-bg-color: #ffffff;
-        --assistant-message-text-color: #333333;
-        --user-message-text-color: #333333;
-        --message-copy-icon-color: #696969;
-    }
-
     /* 1. GLOBAL RESET */
     body, html {
         margin: 0;
@@ -28,32 +20,14 @@
         font-family: sans-serif;
     }
 
-    /* --- NEW MAIN LAYOUT --- */
-    .layout-wrapper {
-        display: grid;
-        /* 1fr = Free space left
-        auto = Width of the central frame
-        1fr = Free space right (balances the left to keep center centered)
-        */
-        grid-template-columns: 1fr auto 1fr; 
-        
-        /* Adds the space between the left panel and the center frame */
-        gap: 20px; 
-        
-        width: 100vw;
-        height: 100vh;
-        overflow: hidden; /* Prevents scrollbars */
-    }
-
-
     /* -----------------------------------------------------------
-       2. HIDDEN LAYER --> The right panel is invisible
+       2. HIDDEN LAYER
        Container for elements functionality requires, but we don't want to see.
        Using visibility: hidden instead of display: none ensures they 
        still technically "take up space" in the DOM tree if the JS checks dimensions,
        but absolute positioning throws them off screen.
     ----------------------------------------------------------- */
-    .hidden-layer {
+    #hidden-layer {
         position: absolute;
         top: -9999px;
         left: -9999px;
@@ -61,260 +35,27 @@
         height: 1px;
         overflow: hidden;
         visibility: hidden; 
-        /* This is invisible, just here to take up the right side space */
-        pointer-events: none;
     }
 
     /* -----------------------------------------------------------
-        3. HELPER BACKUP LAYER --> the left panel can be toggled to be visible
+        3. HELPER BACKUP LAYER
         This layer can be toggled to be visible but is outside
         the main visual frame.
     ----------------------------------------------------------- */
-    /* --- 1. TOGGLE BUTTON STYLING --- */
-    .top-left-btn {
-        position: absolute; /* Keeps it stuck to the screen corner */
-        top: 20px;
-        left: 20px;
-        z-index: 1; /* Ensures it's above absolutely everything */
-        
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 50px;
-        height: 50px;
-        
-        background: rgba(20, 20, 20, 0.85);
-        color: white; /* Icon color */
-        /* border: 1px solid #e0e0e0; */
-        border: none;
-        border-radius: 50%; /* Makes it round */
-        box-shadow: 0 6px 30px rgba(0,0,0,0.6);
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
 
-    /* Button hover effect */
-    .top-left-btn:hover { transform: translateY(-5px); background: rgba(20, 20, 20, 0.65); transition: transform .4s ease;}
-
-    /* Sizing the SVG inside the button */
-    .top-left-btn svg {
-        width: 24px;
-        height: 24px;
-    }
-
-    /* Optional: Style for when the chat is currently OFF (e.g., make button grey) */
-    .top-left-btn.chat-off {
-        background: rgb(121, 6, 4);
-        color: white;
-    }
-
-    .top-left-btn.chat-off:hover { transform: translateY(-5px); background: rgba(121, 6, 4, 0.65); transition: transform .4s ease;}
-
-    .visible-outside-frame {
-        /* This ensures content inside aligns to the right, 
-        closest to the main frame (optional style choice) */
-        position: relative;
-        display: flex;
-        justify-content: flex-end; 
-        align-items: center;
-        overflow: hidden;
-
-        /* For toggling visibility */
-        /* transition and opacity for smooth toggling */
-        opacity: 1;
-        visibility: visible;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-
-        /* Visuals for testing */
-        /* background: rgba(0, 0, 0, 0.05); */
-    }
-
-    /* Hidden chat styling: Javascript will add this class to the frame to hide it. */
-    .visible-outside-frame.is-hidden {
-        /* This is the core request: make it invisible and untouchable */
-        visibility: hidden;
-        pointer-events: none;
-        
-        /* Makes it fade out nicely */
-        opacity: 0; 
-    }
-
-    /* --- CHAT AREA (BACKUP) --- */
-    .backup-chat-area {
-        position: absolute;
-        top: 25%;
-        bottom: 25%;
-        left: 0;
-        width: 100%;
-        z-index: 1; /* Very High Z-Index */
-        display: flex;
-        justify-content: center;
-        opacity: 1;
-    }
-
-    .chat-messages {
-        width: 100%;
-        z-index: 2;
-        overflow-y: auto
-    }
-
-    /* Messages scroll area */
-    #messages {
-        flex: 1;
-        overflow-y: auto;
-        padding-right: 0.5rem;
-    }
-
-    /* Message bubble (base) */
-    .message {
-        position: relative;
-        width: fit-content;
-        max-width: 70%;
-        margin: 1.5rem 0;
-        padding: 1rem;
-        line-height: 1.4;
-        white-space: pre-wrap;
-        overflow-wrap: break-word;
-        background: var(--assistant-message-bg-color);
-        border: 1px solid rgb(39, 39, 39, 0.5);
-        border-radius: 0.75rem;
-    }
-
-    /* User message (right-aligned, distinct bg) */
-    .message.user {
-        margin-left: auto;
-        margin-right: 5%;
-        background: var(--user-message-bg-color);
-        color: var(--user-message-text-color);
-    }
-
-    /* Assistant message (full-width card) */
-    .message.assistant,
-    .message.assistant.loading {
-        width: 90%;
-        max-width: 90%;
-        margin: 0.5rem auto;     /* center horizontally */
-        text-align: left;
-        background: var(--assistant-message-bg-color);
-        color: var(--assistant-message-text-color)
-    }
-
-    /* Inline loading spinner for assistant bubble */
-    .message.assistant.loading::after {
-        content: "";
-        position: absolute;
-        bottom: 0.5rem;
-        right: 0.75rem;
-        width: 1rem;
-        height: 1rem;
-        border: 2px solid transparent;
-        border-top-color: var(--primary-client-color);
-        border-right-color: var(--primary-client-color);
-        border-bottom-color: var(--primary-client-color);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    #messages:empty::before {
-        content: var(--welcome-text);
-        display: block;
-        text-align: center;
-        color: var(--welcome-text-color);
-        font-size: 1.15rem;
-        margin-top: 2rem;
-        padding: 0 1rem;
-        white-space: pre-wrap;
-    }
-
-    /* Copy-to-clipboard icon button on messages */
-    .copy-btn {
-        position: absolute;
-        bottom: 0.5rem;
-        right: 0.5rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 2rem;
-        height: 2rem;
-        padding: 0.25rem;
-        border: none;
-        background: none;
-        cursor: pointer;
-        transition: opacity 0.2s ease;
-        color: var(--assistant-message-bg-color);
-    }
-    .copy-btn svg path { width: 1.5rem; height: 1.5rem; fill: var(--assistant-message-bg-color); stroke: var(--message-copy-icon-color); }
-    .copy-btn:hover svg path { stroke: var(--primary-client-color); }
-    .copy-btn:focus-visible {
-        outline: 2px solid var(--primary-client-color);
-        outline-offset: 2px;
-    }
-
-    /* --- INPUT CONSOLE (BOTTOM CENTER) --- */
-    /* We use the ORIGINAL class name '.input-area' but override its style locally */
-    .input-overlay-wrapper {
-        position: absolute;
-        left: 0;
-        width: 100%;
-        bottom: 0%;
-        z-index: 3; /* Very High Z-Index */
-        display: flex;
-        justify-content: center;
-        pointer-events: none; /* Allow clicks to pass through around the box */
-        opacity: 1;
-        /* visibility: hidden; */
-    }
-
-    /* This mimics the original structure expected by JS */
-    .composer {
-        pointer-events: auto; /* Re-enable clicks specifically for the box */
-        background: rgba(20, 20, 20, 0.85);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 40px;
-        width: 90%;
-        max-width: 650px;
-        padding: 10px 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.6);
-    }
-
-    #userInput {
-        background: transparent;
-        border: none;
-        color: #fff;
-        flex-grow: 1;
-        font-size: 1.05rem;
-        outline: none;
-        resize: none;
-        max-height: 120px;
-        padding: 8px 5px;
-        font-family: inherit;
-    }
-    #userInput::placeholder { color: rgba(255,255,255,0.5); }
-
-    /* Send button styles */
-    #sendBtn {
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        color: white;
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    #sendBtn:hover { background: rgba(255,255,255,0.1); }
-    svg { fill: currentColor; stroke: currentColor; }
 
     /* -----------------------------------------------------------
        4. VISUAL LAYER
        This is the main stage.
     ----------------------------------------------------------- */
+
+    /* --- PAGE LAYOUT --- */
+    .page {
+        /* Page centers the frame on the main web page*/
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+    }
 
     .visible-frame {
         /* Set the frame in which everything for the holobox is presented */
@@ -326,12 +67,9 @@
         max-height: 100vh;
 
         background: #ffffff;
-        overflow: hidden;           /* keeps content inside the frame */
-        /* Ensure it doesn't get crushed */
-        flex-shrink: 0; 
-
-        /* border: 1px solid lightgrey;    */
+        /* border: 1px solid lightgrey;   
         /* ← frame border for testing */
+        overflow: hidden;           /* keeps content inside the frame */
     }
 
     /* --- AVATAR --- */
@@ -494,7 +232,66 @@
         to { transform: rotate(360deg); }
     }
 
-    /* MICROPHONE STYLING */
+
+    /* --- INPUT CONSOLE (BOTTOM CENTER) --- */
+    /* We use the ORIGINAL class name '.input-area' but override its style locally */
+    .input-overlay-wrapper {
+        position: absolute;
+        bottom: 40px;
+        left: 0;
+        width: 100%;
+        z-index: 3; /* Very High Z-Index */
+        display: flex;
+        justify-content: center;
+        pointer-events: none; /* Allow clicks to pass through around the box */
+        opacity: 1
+    }
+
+    /* This mimics the original structure expected by JS */
+    .composer {
+        pointer-events: auto; /* Re-enable clicks specifically for the box */
+        background: rgba(20, 20, 20, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 40px;
+        width: 90%;
+        max-width: 650px;
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    }
+
+    #userInput {
+        background: transparent;
+        border: none;
+        color: #fff;
+        flex-grow: 1;
+        font-size: 1.05rem;
+        outline: none;
+        resize: none;
+        max-height: 120px;
+        padding: 8px 5px;
+        font-family: inherit;
+    }
+    #userInput::placeholder { color: rgba(255,255,255,0.5); }
+
+    /* Send button styles */
+    #sendBtn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: white;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #sendBtn:hover { background: rgba(255,255,255,0.1); }
+    svg { fill: currentColor; stroke: currentColor; }
 
     /* Mic component div */
 
@@ -555,10 +352,6 @@
   <script>
     (function () {
       const HOST_TO_TENANT = {
-        "localhost": "ogvo",
-        "127.0.0.1": "quickstep-ai-development",
-        "zealous-pond-0081a5c03.3.azurestaticapps.net": "ogvo",
-        "proud-field-0704b6003.2.azurestaticapps.net": "test", 
       };
       const host = location.hostname.toLowerCase();
       let tenant = HOST_TO_TENANT[host];
@@ -594,40 +387,7 @@
 </head>
 <body>
 
-  <div class="layout-wrapper">
-
-    <button id="chatToggleBtn" class="top-left-btn" title="Toggle Chat Window">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-    </button>
-
-    <div id="visible-outside-frame", class="visible-outside-frame is-hidden">
-        
-        <div class="backup-chat-area"> 
-
-            <div class="chat-messages">
-                <div id="messages"></div>
-            </div>
-            
-            <div class="input-overlay-wrapper">
-                
-                <!-- <div id="messages"></div> -->
-
-                <div class="composer">
-                    
-                    <textarea id="userInput" rows="1" placeholder="Je vraag of bericht ..."></textarea>
-
-                    <button id="sendBtn" title="Versturen">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-                            <path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-    </div>
+  <div class="page">
 
     <div id="visible-frame" class="visible-frame">
 
@@ -667,31 +427,51 @@
 
     </div>
 
+  </div> 
 
-    <div id="hidden-layer" class="hidden-layer">
-        <img id="clientLogo" alt="Logo" />
-        <button id="homeBtn">Home</button>
-        <button id="resetBtn">Reset</button>
 
-        <div id="avatarCard"></div> 
-        <div class="bronnen-card" id="bronnenTitle">
-            <div class="sources"></div>
+  <div id="visible-outside-frame">
+
+    <div id="messages"></div>
+
+    <div class="input-overlay-wrapper">
+        <div class="composer">
+            
+            <textarea id="userInput" rows="1" placeholder="Je vraag of bericht ..."></textarea>
+
+            <button id="sendBtn" title="Versturen">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
+                    <path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </button>
         </div>
-        <div class="resizer"></div>
-
-        <div id="attachments"></div>
-        <button id="attachBtn"></button> <div id="promptButtons"></div>
-        
-        <input type="file" id="fileInput" multiple accept=".pdf,.docx,application/pdf" />
-
-        <svg xmlns="http://www.w3.org/2000/svg">
-            <symbol id="icon-download" viewBox="0 0 24 24">
-                <path d="M5.625 15C5.625 14.5858 5.28921 14.25 4.875 14.25C4.46079 14.25 4.125 14.5858 4.125 15H5.625ZM4.875 16H4.125H4.875ZM19.275 15C19.275 14.5858 18.9392 14.25 18.525 14.25C18.1108 14.25 17.775 14.5858 17.775 15H19.275ZM11.1086 15.5387C10.8539 15.8653 10.9121 16.3366 11.2387 16.5914C11.5653 16.8461 12.0366 16.7879 12.2914 16.4613L11.1086 15.5387ZM16.1914 11.4613C16.4461 11.1347 16.3879 10.6634 16.0613 10.4086C15.7347 10.1539 15.2634 10.2121 15.0086 10.5387L16.1914 11.4613ZM11.1086 16.4613C11.3634 16.7879 11.8347 16.8461 12.1613 16.5914C12.4879 16.3366 12.5461 15.8653 12.2914 15.5387L11.1086 16.4613ZM8.39138 10.5387C8.13662 10.2121 7.66533 10.1539 7.33873 10.4086C7.01212 10.6634 6.95387 11.1347 7.20862 11.4613L8.39138 10.5387ZM10.95 16C10.95 16.4142 11.2858 16.75 11.7 16.75C12.1142 16.75 12.45 16.4142 12.45 16H10.95ZM12.45 5C12.45 4.58579 12.1142 4.25 11.7 4.25C11.2858 4.25 10.95 4.58579 10.95 5H12.45ZM4.125 15V16H5.625V15H4.125ZM4.125 16C4.125 18.0531 5.75257 19.75 7.8 19.75V18.25C6.61657 18.25 5.625 17.2607 5.625 16H4.125ZM7.8 19.75H15.6V18.25H7.8V19.75ZM15.6 19.75C17.6474 19.75 19.275 18.0531 19.275 16H17.775C17.775 17.2607 16.7834 18.25 15.6 18.25V19.75ZM19.275 16V15H17.775V16H19.275ZM12.2914 16.4613L16.1914 11.4613L15.0086 10.5387L11.1086 15.5387L12.2914 16.4613ZM12.2914 15.5387L8.39138 10.5387L7.20862 11.4613L11.1086 16.4613L12.2914 15.5387ZM12.45 16V5H10.95V16H12.45Z" fill="currentColor"/>
-            </symbol>
-        </svg>
     </div>
 
-  </div> 
+  </div>
+
+
+  <div id="hidden-layer">
+      <img id="clientLogo" alt="Logo" />
+      <button id="homeBtn">Home</button>
+      <button id="resetBtn">Reset</button>
+
+      <div id="avatarCard"></div> 
+      <div class="bronnen-card" id="bronnenTitle">
+         <div class="sources"></div>
+      </div>
+      <div class="resizer"></div>
+
+      <div id="attachments"></div>
+      <button id="attachBtn"></button> <div id="promptButtons"></div>
+      
+      <input type="file" id="fileInput" multiple accept=".pdf,.docx,application/pdf" />
+
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <symbol id="icon-download" viewBox="0 0 24 24">
+            <path d="M5.625 15C5.625 14.5858 5.28921 14.25 4.875 14.25C4.46079 14.25 4.125 14.5858 4.125 15H5.625ZM4.875 16H4.125H4.875ZM19.275 15C19.275 14.5858 18.9392 14.25 18.525 14.25C18.1108 14.25 17.775 14.5858 17.775 15H19.275ZM11.1086 15.5387C10.8539 15.8653 10.9121 16.3366 11.2387 16.5914C11.5653 16.8461 12.0366 16.7879 12.2914 16.4613L11.1086 15.5387ZM16.1914 11.4613C16.4461 11.1347 16.3879 10.6634 16.0613 10.4086C15.7347 10.1539 15.2634 10.2121 15.0086 10.5387L16.1914 11.4613ZM11.1086 16.4613C11.3634 16.7879 11.8347 16.8461 12.1613 16.5914C12.4879 16.3366 12.5461 15.8653 12.2914 15.5387L11.1086 16.4613ZM8.39138 10.5387C8.13662 10.2121 7.66533 10.1539 7.33873 10.4086C7.01212 10.6634 6.95387 11.1347 7.20862 11.4613L8.39138 10.5387ZM10.95 16C10.95 16.4142 11.2858 16.75 11.7 16.75C12.1142 16.75 12.45 16.4142 12.45 16H10.95ZM12.45 5C12.45 4.58579 12.1142 4.25 11.7 4.25C11.2858 4.25 10.95 4.58579 10.95 5H12.45ZM4.125 15V16H5.625V15H4.125ZM4.125 16C4.125 18.0531 5.75257 19.75 7.8 19.75V18.25C6.61657 18.25 5.625 17.2607 5.625 16H4.125ZM7.8 19.75H15.6V18.25H7.8V19.75ZM15.6 19.75C17.6474 19.75 19.275 18.0531 19.275 16H17.775C17.775 17.2607 16.7834 18.25 15.6 18.25V19.75ZM19.275 16V15H17.775V16H19.275ZM12.2914 16.4613L16.1914 11.4613L15.0086 10.5387L11.1086 15.5387L12.2914 16.4613ZM12.2914 15.5387L8.39138 10.5387L7.20862 11.4613L11.1086 16.4613L12.2914 15.5387ZM12.45 16V5H10.95V16H12.45Z" fill="currentColor"/>
+        </symbol>
+      </svg>
+  </div>
 
   <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
   <script src="https://unpkg.com/html2pdf.js/dist/html2pdf.bundle.min.js"></script>

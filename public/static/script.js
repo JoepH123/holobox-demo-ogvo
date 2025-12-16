@@ -170,6 +170,30 @@ const ICON_CHECK = `
 // ========== UTIL FUNCTIONS ========
 // ==================================
 
+// Toggle button for opening and closing chat
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Select the elements needed
+    const toggleButton = document.getElementById('chatToggleBtn');
+    // Note: Selecting by class to match your CSS snippet
+    const chatFrame = document.querySelector('.visible-outside-frame');
+
+    // Safety check: Ensure elements exist before trying to add events
+    if (toggleButton && chatFrame) {
+        
+        toggleButton.addEventListener('click', () => {
+            // 2. Toggle the 'is-hidden' class on the frame container.
+            // This applies the CSS rule: .visible-outside-frame.is-hidden
+            chatFrame.classList.toggle('is-hidden');
+            
+            // Optional: Toggle a class on the button itself for visual feedback
+            toggleButton.classList.toggle('chat-off');
+        });
+        
+    } else {
+        console.error("Could not find Chat Toggle Button or Visible Outside Frame in the DOM.");
+    }
+});
+
 /** Update avatar card status (live indicator). This should be called when the connection to liveAvatar is made */
 function updateAvatarStatus(live) {
   const avatarCard = document.getElementById("avatarCard");

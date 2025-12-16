@@ -31,21 +31,27 @@
   --citations-title-bg-color: var(--secondary-client-color);
   --citations-list-bg-color: var(--secondary-bg-color);
   --citation-chip-bg-color: var(--secondary-bg-color);
-  --user-message-bg-color: var(--secondary-client-color);
-  --assistant-message-bg-color: var(--secondary-bg-color);
+  --user-message-bg-color: var(--secondary-client-color);aa
+  --assistant-message-bg-color: var(--secondary-bg-color);aa
   --example-prompt-button-bg-color: var(--secondary-client-color); 
   --area-around-composer-bg-color: var(--secondary-bg-color);  /* visible area, var(--secondary-bg-color); invisible area, var(--primary-bg-color) */
   --area-around-composer-top-border-color: var(--border-color);  /* visible border: var(--border-color); invisible border: var(--primary-bg-color) */
   --prompt-input-bg-color: var(--secondary-bg-color);
   --user-message-attachment-bg-color: var(--secondary-bg-color); 
 
+    --user-message-bg-color: var(--secondary-client-color);aa
+  --assistant-message-bg-color: var(--secondary-bg-color);aa
+  --assistant-message-text-color: var(--primary-text-color);aa
+  --user-message-text-color: var(--primary-text-color); aa
+    --message-copy-icon-color: var(--svg-icon-grey);  aa
+
   /* Text colors */ 
   --header-buttons-text-color: var(--svg-icon-grey);
   --citations-title-text-color: var(--primary-text-color);
   --citations-text-color: var(--primary-text-color);
   --welcome-text-color: var(--primary-text-color);
-  --assistant-message-text-color: var(--primary-text-color);
-  --user-message-text-color: var(--primary-text-color); 
+  --assistant-message-text-color: var(--primary-text-color);aa
+  --user-message-text-color: var(--primary-text-color); aa
   --example-prompt-button-text-color: var(--primary-text-color);
   --placeholder-prompt-text-color: #9aa0a6;
   --user-prompt-text-color: var(--primary-text-color);
@@ -57,7 +63,7 @@
   /* Component colors */
   --citations-icon-color: var(--svg-icon-grey);
   --resizer-color-rgb: var(--primary-client-color-rgb);
-  --message-copy-icon-color: var(--svg-icon-grey);  
+  --message-copy-icon-color: var(--svg-icon-grey);  aa
   --attachment-divider-icon-color: var(--svg-icon-grey);
   --attachment-divider-line-color: rgba(var(--svg-icon-grey-rgb), .30);
   --prompt-attachment-remove-cross-color: #666;

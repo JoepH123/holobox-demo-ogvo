@@ -10,11 +10,19 @@
 
   <style>
     :root {
-        --user-message-bg-color: #cdcdcd;
-        --assistant-message-bg-color: #ffffff;
-        --assistant-message-text-color: #333333;
-        --user-message-text-color: #333333;
-        --message-copy-icon-color: #696969;
+          /* General colors */
+        --primary-text-color: #333333;
+        --primary-client-color: #737373; /* PRIORITY */
+        --secondary-client-color: #cdcdcd; /* PRIORITY */
+        --primary-bg-color: #f7f7f8;
+        --secondary-bg-color: #ffffff;
+        --border-color: #e0e0e0;
+        --svg-icon-grey: #696969;
+        --user-message-bg-color: var(--secondary-client-color);
+        --assistant-message-bg-color: var(--secondary-bg-color);
+        --assistant-message-text-color: var(--primary-text-color);
+        --user-message-text-color: var(--primary-text-color);
+        --message-copy-icon-color: var(--svg-icon-grey);
     }
 
     /* 1. GLOBAL RESET */
@@ -83,7 +91,7 @@
         width: 50px;
         height: 50px;
         
-        background: rgba(20, 20, 20, 0.85);
+        background: rgb(121, 6, 4);
         color: white; /* Icon color */
         /* border: 1px solid #e0e0e0; */
         border: none;
@@ -104,11 +112,9 @@
 
     /* Optional: Style for when the chat is currently OFF (e.g., make button grey) */
     .top-left-btn.chat-off {
-        background: rgb(121, 6, 4);
+        background: rgba(20, 20, 20, 0.85);
         color: white;
     }
-
-    .top-left-btn.chat-off:hover { transform: translateY(-5px); background: rgba(121, 6, 4, 0.65); transition: transform .4s ease;}
 
     .visible-outside-frame {
         /* This ensures content inside aligns to the right, 
@@ -602,7 +608,7 @@
         </svg>
     </button>
 
-    <div id="visible-outside-frame", class="visible-outside-frame is-hidden">
+    <div id="visible-outside-frame", class="visible-outside-frame">
         
         <div class="backup-chat-area"> 
 
