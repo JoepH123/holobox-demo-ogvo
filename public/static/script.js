@@ -778,8 +778,14 @@ function scheduleAutoHideIfNotHovered() {
 // ==============================================
 
 async function sendMessage() {
+
+  const micBtnLoading = document.getElementById("micBtn");
+
   const text = userInput.value.trim();
   if (!text && !pendingFiles.length) return; // nothing to send
+
+  // Only turn on the loading symbol when there is text to send
+  micBtnLoading.classList.toggle('loading-text', true);
 
   setBusy(true);
 
@@ -788,14 +794,14 @@ async function sendMessage() {
       }
 
   renderMessage('user', text);
+  
+  // Clear user input field
+  userInput.value = '';
+  userInput.style.height = 'auto'; // Reset de hoogte ook meteen
 
   // show attachments inside the just-rendered user bubble
   const userBubble = messagesDiv.lastElementChild;
   if (pendingFiles.length) appendAttachmentsToMessage(userBubble, pendingFiles);
-
-  // reset input field sizing
-  userInput.value = '';
-  userInput.style.height = 'auto';
 
   // Clear attachments strip after moving them into the message
   document.getElementById('attachments').innerHTML = '';
@@ -877,12 +883,32 @@ async function sendMessage() {
       addCitation(citations);
     }
 
+    // Stop text loading style of MIC button
+    micBtnLoading.classList.toggle('loading-text', false);
+
+    // Start speech loading style of MIC button
+    if (avatarOnline) {
+      micBtnLoading.classList.toggle('loading-speech', true);
+    }
+
     // Persist assistant message into context as plain text (no HTML)
     context.push({ role: 'assistant', content: bubble.textContent });
     if (window.showAvatar === true && avatarOnline === true){
         await speakAvatar(bubble.textContent)
     }
+
+    // Stop speech loading style of MIC button after N seconds
+    // Allow interruption after first few seconds
+    if (avatarOnline) {
+      setTimeout(() => {
+        micBtnLoading.classList.toggle('loading-speech', false);
+      }, 5000);
+    }
+
   } catch (err) {
+    // In case of any errors, reset MIC button; stop any loading
+    micBtnLoading.classList.toggle('loading-text', false);
+    micBtnLoading.classList.toggle('loading-speech', false);
     if (err.name === 'AbortError') {
       // Silently finalize the bubble after a manual stop
       bubble.classList.remove('loading');
@@ -1314,6 +1340,11 @@ function startDictation() {
   lastStaticText = userInput.value;
 
   recognition.onresult = (ev) => {
+    // This line says: if we have stopped recording, ignore the final updates
+    // because this caused an error where a message was send, but the full sentence
+    // remained in the user input console. 
+    if (!listening) return;
+
     resetSilenceTimer();
 
     let interim = "";
@@ -1354,12 +1385,29 @@ function startDictation() {
 function stopDictation() {
   if (!listening) return;
   listening = false;
-  updateDictationStatus(false); // revert dictation button to normal styling
-  clearTimeout(silenceTimer);
+
+  // Revert button styling
+  updateDictationStatus(false);
   setMicVisual(false);
-  sendMessage()
+
+  // Clear the silence timer so it doesn't fire later
+  clearTimeout(silenceTimer);
+    
+  // Stop the actual browser engine
   try { recognition && recognition.stop(); } catch {}
   recognition = null;
+
+  // Check if we actually have text to send
+  const text = userInput.value.trim();
+
+  if (text.length > 0) {
+    // We have text -> Send it (this triggers the loading animation)
+    sendMessage();
+  } else {
+    // No text (glitch or silence) -> Just reset the button visually
+    resetMicButtonState();
+    console.log("Dictation stopped with no input.");
+  }
 }
 
 micBtn?.addEventListener('click', () => {
