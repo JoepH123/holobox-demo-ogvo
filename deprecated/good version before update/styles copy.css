@@ -80,9 +80,6 @@ body, html {
     box-shadow: 0 6px 30px rgba(0,0,0,0.6);
     cursor: pointer;
     transition: all 0.3s ease;
-
-    /* To fully hide the chat and the button only set this to hidden, if you want to see it set it to visible */
-    visibility: hidden;  /* hidden | visible */
 }
 
 /* Button hover effect */
@@ -114,13 +111,8 @@ body, html {
     /* For toggling visibility */
     /* transition and opacity for smooth toggling */
     opacity: 1;
-    visibility: visible;  /* hidden | visible */
+    visibility: visible;
     transition: opacity 0.3s ease, visibility 0.3s ease;
-
-    /* 
-       To fully turn off everything outside avatar area:
-       You only need to set the visibility of the chat button to hidden
-    */
 
     /* Visuals for testing */
     /* background: rgba(0, 0, 0, 0.05); */
@@ -328,7 +320,7 @@ svg { fill: currentColor; stroke: currentColor; }
     /* Ensure it doesn't get crushed */
     flex-shrink: 0; 
 
-    /* border: 1px solid lightgrey;    */
+    border: 1px solid lightgrey;   
     /* ← frame border for testing */
 }
 
@@ -403,11 +395,11 @@ svg { fill: currentColor; stroke: currentColor; }
     display: flex;
     gap: 5%;
     background: white;
-    border-radius: 12% / calc(12% / (9/16)); /* match avatar card rounding */
-    padding: 1.5%;
-    box-shadow: 0 0.6vmin 1.4vmin rgba(0, 0, 0, 0.15);
+    /* border-radius: 2rem; match avatar card rounding */
+    /* padding: 0.35em 0.5rem; */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     opacity: 1;
-    justify-content: space-between;
+    /* transform: translateY(0); */
     transition: opacity .4s ease, transform .4s ease;
 }
 
@@ -428,26 +420,19 @@ svg { fill: currentColor; stroke: currentColor; }
 /* --- Avatar control button styling details --- */
 
 .avatarBtn {
-  border: none;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  /* Button size linked to panel height */
-  height: 100%;              /* fill the panel’s inner height */
-  aspect-ratio: 1 / 1;       /* always a circle */
-  width: auto;               /* derived from aspect-ratio */
-
-  border-radius: 50%;
-  padding: 0;
-  line-height: 0;
-
-  color: white;
-  background-color: rgb(40, 167, 69);
-
-  transition: background-color .3s ease, transform .2s ease;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    color: white;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    background-color: rgb(40, 167, 69); /* 🟢 start */
+    line-height: 0;             /* remove inline baseline wiggle */
+    padding: 0;                 /* make the circle tight */
 }
 
 #btnInterrupt {
@@ -458,10 +443,8 @@ svg { fill: currentColor; stroke: currentColor; }
 }
 
 /* Size & block layout for the SVG */
-#btnInterrupt svg {
+#btnInterrupt svg rect {
     display: block;             /* no baseline gap */
-    width: 35%;       /* adjust size of connection symbol */
-    height: 35%;
 }
 
 /* Greyed-out look when disabled */
@@ -483,16 +466,17 @@ svg { fill: currentColor; stroke: currentColor; }
 #btnInterrupt.loading::after { 
     content: "";
     position: absolute;
-    width: 110%;
-    height: 110%;
+    width: 1.75rem;
+    height: 1.75rem;
     border-radius: 50%;
+    /* border: 2px solid rgba(39, 39, 39, .85); */
     border-top-color: transparent;
     animation: btn-spin 0.75s linear infinite;
 }
 
 #btnStartStop svg {
-    width: 65%;       /* adjust size of connection symbol */
-    height: 65%;
+    width: 32px;       /* adjust size of connection symbol */
+    height: 32px;
     /* Color is changed using the "color" argument in the AvatarButton*/
 }
 
@@ -513,8 +497,8 @@ svg { fill: currentColor; stroke: currentColor; }
 #btnStartStop.loading::after { 
     content: "";
     position: absolute;
-    width: 110%;
-    height: 110%;
+    width: 53px;
+    height: 53px;
     border-radius: 50%;
     border: 2px solid rgba(40, 167, 69, 0.5); /* 🟢 green */
     border-top-color: transparent;
@@ -530,9 +514,9 @@ svg { fill: currentColor; stroke: currentColor; }
 #btnStartStop { position: relative; }
 
 @keyframes btn-pulse {
-    0%   { transform: scale(1.00); }
-    50%  { transform: scale(1.06); }
-    100% { transform: scale(1.00); }
+    0%   { transform: scale(1.00); box-shadow: 0 0 0 0 rgba(0,0,0,0.12); }
+    50%  { transform: scale(1.06); box-shadow: 0 0.15rem 0.6rem 0 rgba(0,0,0,0.18); }
+    100% { transform: scale(1.00); box-shadow: 0 0 0 0 rgba(0,0,0,0.12); }
 }
 @keyframes btn-spin {
     to { transform: rotate(360deg); }
@@ -546,7 +530,7 @@ svg { fill: currentColor; stroke: currentColor; }
     position: absolute;
     top: 40%;
     left: 85%;
-    width: 10%;  /* clamp(48px, 12%, 96px); */
+    width: 12%;  /* clamp(48px, 12%, 96px); */
     aspect-ratio: 1 / 1;  /* 👈 keeps width = height */
     z-index: 5;
 }
@@ -558,17 +542,15 @@ svg { fill: currentColor; stroke: currentColor; }
     border: 1px solid rgba(255, 255, 255, 0.15);
     cursor: pointer;
     color: white;
-    width: 100%;
-    height: 100%;
+    width: 90%;
+    height: 90%;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1.2vmin 3vmin rgba(0, 0, 0, 0.4);
-
+    box-shadow: 0 6px 30px rgba(0,0,0,0.6);
 }
 #micBtn:active { background: rgba(20, 20, 20, 0.65); transition: transform .4s ease;}
-#micBtn:hover { transform: scale(1.05); filter: opacity(0.80); transition: background-color .3s ease, transform .2s ease; }
 
 /* Recording (active dictation) state */
 #micBtn.recording {
@@ -642,8 +624,8 @@ transform: scale(0.9);
 #micBtn.loading-text::after { 
     content: "";
     position: absolute;
-    width: 110%;
-    height: 110%;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     border: 2px solid rgba(121, 6, 4, 0.8); /* Red */
     border-top-color: transparent;
@@ -668,8 +650,8 @@ transform: scale(0.9);
 #micBtn.loading-speech::after { 
     content: "";
     position: absolute;
-    width: 110%;
-    height: 110%;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     border: 2px solid rgba(121, 6, 4, 0.8); /* Red */
     border-top-color: transparent;
