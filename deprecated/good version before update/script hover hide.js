@@ -210,8 +210,6 @@ function updateAvatarStatus(live) {
     // If live is FALSE, we REMOVE "is-hidden" (Overlay appears)
     overlay.classList.toggle("is-hidden", live);
   }
-  
-  clearControlsTimer();
 }
 
 /** Scroll the container so that the given message is at the top, with bottom padding. */
@@ -701,25 +699,16 @@ window.addEventListener('beforeunload', () => {
   try { btnStartStop.dataset.state = 'start'; } catch {}
 });
 
-
-// =======================================
-// === Avatar Controls (Timers only)    ===
-// =======================================
+// =================================
+// === Avatar Controls Auto-Hide ===
+// =================================
 
 let controlHideTimer = null;
-let delay_hide_panel = 5000;
 
 function getAvatarBits() {
   const card = document.getElementById('visible-frame');
   const controls = card?.querySelector('.avatar-controls');
   return { card, controls };
-}
-
-function clearControlsTimer() {
-  if (controlHideTimer) {
-    clearTimeout(controlHideTimer);
-    controlHideTimer = null;
-  }
 }
 
 function showAvatarControls() {
@@ -729,49 +718,60 @@ function showAvatarControls() {
 }
 
 function hideAvatarControls() {
-  const { controls } = getAvatarBits();
+  const { card, controls } = getAvatarBits();
   if (!controls) return;
+  // Skip hiding if mouse is currently over the avatar card
+  if (card.matches(':hover')) return;
   controls.classList.add('auto-hidden');
 }
 
-function scheduleAutoHide() {
-  clearControlsTimer();
-
-  // Only auto-hide when avatar is actually online/connected
-  if (!avatarOnline) return;
-
-  controlHideTimer = setTimeout(() => {
-    hideAvatarControls();
-  }, delay_hide_panel);
+function clearControlsTimer() {
+  if (controlHideTimer) {
+    clearTimeout(controlHideTimer);
+    controlHideTimer = null;
+  }
 }
 
 /**
- * Clicking the avatar frame should ONLY re-show controls and restart the timer.
- * It should NEVER hide controls.
- * Mic button clicks should NOT affect the control panel.
- * Connect button clicks should NOT affect the control panel.
+ * Setup hover listeners once.
+ * - Always show on mouseenter
+ * - If streaming, schedule a 3s hide on mouseleave
  */
-(function initAvatarFrameClickReshow() {
+(function initAvatarControlsHover() {
   const { card } = getAvatarBits();
   if (!card) return;
 
-  card.addEventListener('pointerdown', (e) => {
-    const micBtn = document.getElementById('micBtn');
-    const connectBtn =
-      document.getElementById('connectBtn') ||
-      document.getElementById('connect-button') ||
-      document.getElementById('btnConnect');
-
-    // Ignore mic/connect button interactions entirely
-    if (micBtn && micBtn.contains(e.target)) return;
-    if (connectBtn && connectBtn.contains(e.target)) return;
-
-    // Only re-show + restart timer (never hide)
+  card.addEventListener('mouseenter', () => {
+    clearControlsTimer();
     showAvatarControls();
-    scheduleAutoHide();
+  });
+
+  card.addEventListener('mouseleave', () => {
+    clearControlsTimer();
+    if (avatarOnline) {
+      controlHideTimer = setTimeout(() => {
+        hideAvatarControls();
+      }, 100);
+    }
   });
 })();
 
+/**
+ * Call this after streaming starts: show controls now, then if not hovered,
+ * schedule the 3s auto-hide.
+ */
+function scheduleAutoHideIfNotHovered() {
+  const { card } = getAvatarBits();
+  if (!card) return;
+  clearControlsTimer();
+
+  // If mouse isn't currently over the card, hide after 3s
+  if (!card.matches(':hover')) {
+    controlHideTimer = setTimeout(() => {
+      hideAvatarControls();
+    }, 3000);
+  }
+}
 
 // ==============================================
 // ========== STREAMING SEND FLOW (SSE) =========
