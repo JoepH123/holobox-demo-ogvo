@@ -82,7 +82,7 @@ body, html {
     transition: all 0.3s ease;
 
     /* To fully hide the chat and the button only set this to hidden, if you want to see it set it to visible */
-    visibility: hidden;  /* hidden | visible */
+    visibility: visible;  /* hidden | visible */
 }
 
 /* Button hover effect */
