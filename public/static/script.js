@@ -82,6 +82,14 @@ const ICON_CHECK = `
 </svg>`;
 
 // ==================================
+// ======= General page settings ====
+// ==================================
+
+document.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+});
+
+// ==================================
 // ======= Instruction prompt =======
 // ==================================
   let instruction_prompt;
@@ -1285,7 +1293,7 @@ const micBtn = document.getElementById('micBtn');
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 // Configurable variable, that determines how long (ms) of silence to wait before auto-stopping.
-const AUTO_STOP_SILENCE_MS = 1800;  // 1000 = 1s, 0 = disabled --> 1800 gives good balance for conversation
+const AUTO_STOP_SILENCE_MS = 2500  // 1000 = 1s, 0 = disabled --> 2500 gives good balance for conversation
 
 /** Update dictation status - necessary for UI styling */
 function updateDictationStatus(recording) {
@@ -1403,10 +1411,7 @@ function stopDictation() {
   if (text.length > 0) {
     // We have text -> Send it (this triggers the loading animation)
     sendMessage();
-  } else {
-    // No text (glitch or silence) -> Just reset the button visually
-    resetMicButtonState();
-    console.log("Dictation stopped with no input.");
+    console.log("Dictation stopped and message sent:", text);
   }
 }
 
