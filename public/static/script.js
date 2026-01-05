@@ -6,6 +6,8 @@ import {
   LiveAvatarSession,
   SessionEvent,
 } from "https://esm.run/@heygen/liveavatar-web-sdk@0.0.9";
+import * as SpeechSDK from "https://esm.run/microsoft-cognitiveservices-speech-sdk";
+
 /**
  * Number of past turns to include when sending context to the backend.
  * Keep small to reduce token/latency costs while preserving coherence.
@@ -1284,16 +1286,152 @@ function appendAttachmentsToMessage(msgEl, files){
   msgEl.appendChild(body);
 }
 
+// // =============================
+// // ====== Voice Dictation ======
+// // =============================
+
+// // ====== Voice Dictation (always live typing + configurable auto-stop) ======
+// const micBtn = document.getElementById('micBtn');
+// const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+// // Configurable variable, that determines how long (ms) of silence to wait before auto-stopping.
+// const AUTO_STOP_SILENCE_MS = 2500  // 1000 = 1s, 0 = disabled --> 2500 gives good balance for conversation
+
+// /** Update dictation status - necessary for UI styling */
+// function updateDictationStatus(recording) {
+//   const micBtn = document.getElementById("micBtn");
+//   if (!micBtn) return;
+//   micBtn.classList.toggle("recording", recording);
+// }
+
+// // Internal state
+// let recognition = null;
+// let listening = false;
+// let finalBuffer = "";
+// let lastStaticText = "";
+// let silenceTimer = null;
+
+// function ensureRecognition() {
+//   if (!SpeechRecognition) {
+//     alert("Spraakherkenning wordt niet door deze browser ondersteund. Probeer Chrome of Edge.");
+//     return null;
+//   }
+//   const r = new SpeechRecognition();
+//   r.lang = 'nl-NL' || navigator.language;
+//   r.interimResults = true;
+//   r.continuous = true;
+//   return r;
+// }
+
+// function setMicVisual(on) {
+//   micBtn.classList.toggle('recording', on);
+//   micBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+// }
+
+// function resetSilenceTimer() {
+//   clearTimeout(silenceTimer);
+//   if (AUTO_STOP_SILENCE_MS > 0) {
+//     silenceTimer = setTimeout(() => {
+//       console.log(`⏸️ Auto-stopping after ${AUTO_STOP_SILENCE_MS / 1000}s of silence`);
+//       stopDictation();
+//     }, AUTO_STOP_SILENCE_MS);
+//   }
+// }
+
+// function startDictation() {
+//   if (listening) return;
+//   recognition = ensureRecognition();
+//   if (!recognition) return;
+
+//   listening = true;
+//   updateDictationStatus(true);  // Make sure button styling knows it is listening
+//   setMicVisual(true);
+//   finalBuffer = "";
+//   lastStaticText = userInput.value;
+
+//   recognition.onresult = (ev) => {
+//     // This line says: if we have stopped recording, ignore the final updates
+//     // because this caused an error where a message was send, but the full sentence
+//     // remained in the user input console. 
+//     if (!listening) return;
+
+//     resetSilenceTimer();
+
+//     let interim = "";
+//     for (let i = ev.resultIndex; i < ev.results.length; i++) {
+//       const res = ev.results[i];
+//       const text = res[0]?.transcript || "";
+//       if (res.isFinal) {
+//         finalBuffer += (finalBuffer && !finalBuffer.endsWith(' ') ? ' ' : '') + text.trim();
+//       } else {
+//         interim += text;
+//       }
+//     }
+
+//     // Show text as you speak (real-time)
+//     const base = lastStaticText ? (lastStaticText.trimEnd() + ' ') : '';
+//     const full = (base + finalBuffer + (interim ? (' ' + interim) : '')).replace(/\s+/g, ' ').trimStart();
+//     userInput.value = full;
+//     userInput.dispatchEvent(new Event('input')); // triggers autoresize
+//   };
+
+//   recognition.onerror = (e) => {
+//     console.warn('Speech error:', e.error);
+//     stopDictation();
+//   };
+
+//   recognition.onend = () => {
+//     if (listening) stopDictation();
+//   };
+
+//   try {
+//     recognition.start();
+//     resetSilenceTimer(); // initialize early in case of instant silence
+//   } catch (e) {
+//     console.warn('recognition.start error:', e);
+//   }
+// }
+
+// function stopDictation() {
+//   if (!listening) return;
+//   listening = false;
+
+//   // Revert button styling
+//   updateDictationStatus(false);
+//   setMicVisual(false);
+
+//   // Clear the silence timer so it doesn't fire later
+//   clearTimeout(silenceTimer);
+    
+//   // Stop the actual browser engine
+//   try { recognition && recognition.stop(); } catch {}
+//   recognition = null;
+
+//   // Check if we actually have text to send
+//   const text = userInput.value.trim();
+
+//   if (text.length > 0) {
+//     // We have text -> Send it (this triggers the loading animation)
+//     sendMessage();
+//     console.log("Dictation stopped and message sent:", text);
+//   }
+// }
+
+// micBtn?.addEventListener('click', () => {
+//   if (listening) stopDictation();
+//   else startDictation();
+// });
+
+
 // =============================
 // ====== Voice Dictation ======
+// ====== (Azure Speech SDK) ====
 // =============================
 
-// ====== Voice Dictation (always live typing + configurable auto-stop) ======
 const micBtn = document.getElementById('micBtn');
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 // Configurable variable, that determines how long (ms) of silence to wait before auto-stopping.
-const AUTO_STOP_SILENCE_MS = 2500  // 1000 = 1s, 0 = disabled --> 2500 gives good balance for conversation
+const AUTO_STOP_SILENCE_MS = 2500; // 1000 = 1s, 0 = disabled
 
 /** Update dictation status - necessary for UI styling */
 function updateDictationStatus(recording) {
@@ -1302,26 +1440,17 @@ function updateDictationStatus(recording) {
   micBtn.classList.toggle("recording", recording);
 }
 
-// Internal state
-let recognition = null;
+// Internal state (matches your previous behavior)
+let recognizer = null;
 let listening = false;
-let finalBuffer = "";
+
 let lastStaticText = "";
+let finalBuffer = "";
+let interimBuffer = "";
 let silenceTimer = null;
 
-function ensureRecognition() {
-  if (!SpeechRecognition) {
-    alert("Spraakherkenning wordt niet door deze browser ondersteund. Probeer Chrome of Edge.");
-    return null;
-  }
-  const r = new SpeechRecognition();
-  r.lang = 'nl-NL' || navigator.language;
-  r.interimResults = true;
-  r.continuous = true;
-  return r;
-}
-
 function setMicVisual(on) {
+  if (!micBtn) return;
   micBtn.classList.toggle('recording', on);
   micBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
 }
@@ -1336,80 +1465,128 @@ function resetSilenceTimer() {
   }
 }
 
-function startDictation() {
+// Fetch short-lived token from your SWA API (POST)
+async function getAzureSpeechAuth() {
+  const res = await fetch("/api/speechToken", { method: "POST" });
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json(); // { token, region }
+}
+
+// Render typed text into textarea exactly like your old flow
+function renderLiveInput() {
+  const base = lastStaticText ? (lastStaticText.trimEnd() + " ") : "";
+  const full = (base + finalBuffer + (interimBuffer ? (" " + interimBuffer) : ""))
+    .replace(/\s+/g, " ")
+    .trimStart();
+
+  userInput.value = full;
+  userInput.dispatchEvent(new Event('input')); // triggers autoresize
+}
+
+async function startDictation() {
   if (listening) return;
-  recognition = ensureRecognition();
-  if (!recognition) return;
+  if (!micBtn) return;
 
   listening = true;
-  updateDictationStatus(true);  // Make sure button styling knows it is listening
+  updateDictationStatus(true);
   setMicVisual(true);
+
   finalBuffer = "";
+  interimBuffer = "";
   lastStaticText = userInput.value;
 
-  recognition.onresult = (ev) => {
-    // This line says: if we have stopped recording, ignore the final updates
-    // because this caused an error where a message was send, but the full sentence
-    // remained in the user input console. 
-    if (!listening) return;
-
-    resetSilenceTimer();
-
-    let interim = "";
-    for (let i = ev.resultIndex; i < ev.results.length; i++) {
-      const res = ev.results[i];
-      const text = res[0]?.transcript || "";
-      if (res.isFinal) {
-        finalBuffer += (finalBuffer && !finalBuffer.endsWith(' ') ? ' ' : '') + text.trim();
-      } else {
-        interim += text;
-      }
-    }
-
-    // Show text as you speak (real-time)
-    const base = lastStaticText ? (lastStaticText.trimEnd() + ' ') : '';
-    const full = (base + finalBuffer + (interim ? (' ' + interim) : '')).replace(/\s+/g, ' ').trimStart();
-    userInput.value = full;
-    userInput.dispatchEvent(new Event('input')); // triggers autoresize
-  };
-
-  recognition.onerror = (e) => {
-    console.warn('Speech error:', e.error);
-    stopDictation();
-  };
-
-  recognition.onend = () => {
-    if (listening) stopDictation();
-  };
-
   try {
-    recognition.start();
-    resetSilenceTimer(); // initialize early in case of instant silence
+    const { token, region } = await getAzureSpeechAuth();
+
+    const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+    speechConfig.speechRecognitionLanguage = "nl-NL";
+
+    const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+    recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+    // Interim results (live typing)
+    recognizer.recognizing = (_s, e) => {
+      if (!listening) return;
+      resetSilenceTimer();
+      interimBuffer = e?.result?.text || "";
+      renderLiveInput();
+    };
+
+    // Finalized phrases
+    recognizer.recognized = (_s, e) => {
+      if (!listening) return;
+
+      if (e?.result?.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+        resetSilenceTimer();
+        const text = e?.result?.text || "";
+        if (text) {
+          const trimmed = text.trim();
+          if (trimmed) {
+            finalBuffer += (finalBuffer && !finalBuffer.endsWith(" ") ? " " : "") + trimmed;
+          }
+          interimBuffer = "";
+          renderLiveInput();
+        }
+      }
+    };
+
+    // Errors/cancel
+    recognizer.canceled = (_s, e) => {
+      console.warn("Speech canceled:", e?.errorDetails || e?.reason || e);
+      stopDictation();
+    };
+
+    // Session end
+    recognizer.sessionStopped = () => {
+      if (listening) stopDictation();
+    };
+
+    // Start continuous recognition
+    recognizer.startContinuousRecognitionAsync(
+      () => {
+        resetSilenceTimer(); // init early in case of instant silence
+      },
+      (err) => {
+        console.warn("startContinuousRecognitionAsync error:", err);
+        stopDictation();
+      }
+    );
+
   } catch (e) {
-    console.warn('recognition.start error:', e);
+    console.error("Azure dictation start failed:", e);
+    alert("Azure spraakherkenning kon niet starten.");
+    stopDictation();
   }
 }
 
 function stopDictation() {
   if (!listening) return;
+
   listening = false;
 
-  // Revert button styling
   updateDictationStatus(false);
   setMicVisual(false);
 
-  // Clear the silence timer so it doesn't fire later
   clearTimeout(silenceTimer);
-    
-  // Stop the actual browser engine
-  try { recognition && recognition.stop(); } catch {}
-  recognition = null;
 
-  // Check if we actually have text to send
+  const r = recognizer;
+  recognizer = null;
+
+  // Stop the actual Azure engine
+  if (r) {
+    try {
+      r.stopContinuousRecognitionAsync(
+        () => { try { r.close(); } catch {} },
+        () => { try { r.close(); } catch {} }
+      );
+    } catch {
+      try { r.close(); } catch {}
+    }
+  }
+
+  // Same behavior as your old code: if we have text, send it
   const text = userInput.value.trim();
-
   if (text.length > 0) {
-    // We have text -> Send it (this triggers the loading animation)
     sendMessage();
     console.log("Dictation stopped and message sent:", text);
   }
