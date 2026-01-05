@@ -584,7 +584,7 @@ transform: scale(0.9);
     display: none;
 }
 .icon-default {
-    width: 60%; height: 60%; display: block;
+    width: 70%; height: 70%; display: block;
 }
 
 /* We want to pulse not to change the button but a slighly lighter colored aarea behind the button with same size as the button */
